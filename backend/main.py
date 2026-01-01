@@ -18,6 +18,7 @@ from schemas import (
 from math_generator import generate_block
 from pdf_generator import generate_pdf
 from pdf_generator_v2 import generate_pdf_v2
+from pdf_generator_playwright import generate_pdf_playwright
 from presets import get_preset_blocks
 
 # Lazy import of user_routes to prevent startup failures
@@ -249,9 +250,9 @@ async def generate_pdf_endpoint(
             final_blocks.append(gen_block)
             question_id_counter += block.count
     
-    # Generate PDF using new v2 generator (matches preview exactly)
+    # Generate PDF using Playwright (industry standard - pixel perfect)
     try:
-        pdf_buffer = generate_pdf_v2(config, final_blocks, with_answers, answers_only)
+        pdf_buffer = await generate_pdf_playwright(config, final_blocks, with_answers, answers_only)
         if answers_only:
             filename = f"{config.title.replace(' ', '_')}_answers_only.pdf"
         elif with_answers:
@@ -299,9 +300,9 @@ async def download_paper_pdf(
         generated_blocks.append(gen_block)
         question_id_counter += block_config.count
     
-    # Generate PDF using new v2 generator (matches preview exactly)
+    # Generate PDF using Playwright (industry standard - pixel perfect)
     try:
-        pdf_buffer = generate_pdf_v2(config, generated_blocks, with_answers, False)
+        pdf_buffer = await generate_pdf_playwright(config, generated_blocks, with_answers, False)
         filename = f"{paper.title.replace(' ', '_')}{'_answers' if with_answers else ''}.pdf"
         
         return StreamingResponse(
