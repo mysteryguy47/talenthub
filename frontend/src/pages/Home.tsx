@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useAuth } from "../contexts/AuthContext";
 import { 
   Sparkles, 
@@ -20,8 +20,25 @@ import {
 
 export default function Home() {
   const { user, isAuthenticated } = useAuth();
+  const [, setLocation] = useLocation();
   const userName = user?.name?.split(' ')[0] || 'there';
   const [expandedCourse, setExpandedCourse] = useState<string | null>(null);
+
+  // Handle explore button click - navigate and scroll to top
+  const handleExploreClick = (path: string) => {
+    setLocation(path);
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }, 100);
+  };
+
+  // Handle scroll to courses section
+  const scrollToCourses = () => {
+    const coursesSection = document.getElementById("courses-section");
+    if (coursesSection) {
+      coursesSection.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
 
   const toggleCourse = (courseId: string) => {
     setExpandedCourse(expandedCourse === courseId ? null : courseId);
@@ -89,29 +106,30 @@ export default function Home() {
               </>
             ) : (
               <>
-                <Link href="/create">
+                <Link href="/mental">
                   <button className="group relative inline-flex items-center justify-center px-10 py-4 text-base font-bold text-white bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-2xl shadow-2xl hover:shadow-purple-500/50 transform hover:-translate-y-1 transition-all duration-300 overflow-hidden">
                     <span className="relative z-10 flex items-center gap-3">
-                      <Sparkles className="w-5 h-5" />
-                      Get Started Free
+                      <Brain className="w-5 h-5" />
+                      Mental Math Practice
                       <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                     </span>
                     <div className="absolute inset-0 bg-gradient-to-r from-indigo-700 via-purple-700 to-pink-700 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   </button>
                 </Link>
-                <Link href="/login">
-                  <button className="group inline-flex items-center justify-center px-10 py-4 text-base font-semibold text-indigo-600 bg-white/90 backdrop-blur-sm border-2 border-indigo-200 rounded-2xl shadow-lg hover:shadow-xl hover:border-indigo-300 transform hover:-translate-y-1 transition-all duration-300">
-                    Sign In
-                    <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-                  </button>
-                </Link>
+                <button
+                  onClick={scrollToCourses}
+                  className="group inline-flex items-center justify-center px-10 py-4 text-base font-semibold text-indigo-600 bg-white/90 backdrop-blur-sm border-2 border-indigo-200 rounded-2xl shadow-lg hover:shadow-xl hover:border-indigo-300 transform hover:-translate-y-1 transition-all duration-300"
+                >
+                  Explore Courses
+                  <BookOpen className="w-5 h-5 ml-2 group-hover:scale-110 transition-transform" />
+                </button>
               </>
             )}
           </div>
         </div>
 
         {/* Courses Section */}
-        <div className="max-w-7xl mx-auto mb-20 md:mb-24">
+        <div id="courses-section" className="max-w-7xl mx-auto mb-20 md:mb-24">
           <div className="text-center mb-12 md:mb-16">
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-4 tracking-tight">
               Courses Offered by
@@ -196,12 +214,13 @@ export default function Home() {
                         </ul>
                       </div>
                       <div className="mt-8">
-                        <Link href="/courses/abacus">
-                          <button className="group w-full md:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300">
-                            Explore Abacus
-                            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                          </button>
-                        </Link>
+                        <button 
+                          onClick={() => handleExploreClick("/courses/abacus")}
+                          className="group w-full md:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300"
+                        >
+                          Explore Abacus
+                          <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -280,12 +299,13 @@ export default function Home() {
                         </ul>
                       </div>
                       <div className="mt-8">
-                        <Link href="/courses/vedic-maths">
-                          <button className="group w-full md:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300">
-                            Explore Vedic Maths
-                            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                          </button>
-                        </Link>
+                        <button 
+                          onClick={() => handleExploreClick("/courses/vedic-maths")}
+                          className="group w-full md:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300"
+                        >
+                          Explore Vedic Maths
+                          <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -365,12 +385,13 @@ export default function Home() {
                         </ul>
                       </div>
                       <div className="mt-8">
-                        <Link href="/courses/handwriting">
-                          <button className="group w-full md:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300">
-                            Explore Handwriting
-                            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </button>
-            </Link>
+                        <button 
+                          onClick={() => handleExploreClick("/courses/handwriting")}
+                          className="group w-full md:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300"
+                        >
+                          Explore Handwriting
+                          <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -449,12 +470,13 @@ export default function Home() {
                         </ul>
                       </div>
                       <div className="mt-8">
-                        <Link href="/courses/stem">
-                          <button className="group w-full md:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300">
-                            Explore STEM
-                            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                          </button>
-                        </Link>
+                        <button 
+                          onClick={() => handleExploreClick("/courses/stem")}
+                          className="group w-full md:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300"
+                        >
+                          Explore STEM
+                          <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                        </button>
                       </div>
                     </div>
                   </div>

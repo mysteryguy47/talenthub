@@ -72,3 +72,6 @@ Total Points = (Base Points + Speed Bonus + Accuracy Bonus) × Difficulty Multip
 - Final: 90 × 1.0 = **90 points**
 
 
+
+
+

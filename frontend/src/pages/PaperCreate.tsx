@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, DragEvent } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { Link, useLocation } from "wouter";
-import { ArrowLeft, Plus, Trash2, Eye, EyeOff, FileDown, XCircle, GripVertical, Copy, ChevronUp, ChevronDown } from "lucide-react";
+import { Link, useLocation, setLocation } from "wouter";
+import { ArrowLeft, Plus, Trash2, Eye, EyeOff, FileDown, XCircle, GripVertical, Copy, ChevronUp, ChevronDown, Play } from "lucide-react";
 import { previewPaper, generatePdf, PaperConfig, BlockConfig, GeneratedBlock } from "@/lib/api";
 import MathQuestion from "@/components/MathQuestion";
 
@@ -116,6 +116,201 @@ function generateSectionName(block: BlockConfig): string {
     const table = block.constraints.tableNumber ?? "10-99";
     return `Tables (${table})`;
   }
+  // Vedic Maths Level 2 operations
+  else if (block.type === "vedic_fun_with_9") {
+    const caseType = block.constraints.funWith9Case || "mix";
+    return `Fun with 9 (${caseType})`;
+  } else if (block.type === "vedic_fun_with_5") {
+    return `Fun with 5`;
+  } else if (block.type === "vedic_fun_with_10") {
+    return `Fun with 10`;
+  } else if (block.type === "vedic_multiply_by_1001") {
+    const digits = block.constraints.digits ?? 2;
+    return `Multiply by 1001 (${digits}D)`;
+  } else if (block.type === "vedic_multiply_by_5_25_125") {
+    const digits = block.constraints.digits ?? 2;
+    return `Multiply by 5, 25, 125 (${digits}D)`;
+  } else if (block.type === "vedic_divide_by_5_25_125") {
+    const digits = block.constraints.digits ?? 2;
+    return `Divide by 5, 25, 125 (${digits}D)`;
+  } else if (block.type === "vedic_multiply_by_5_50_500") {
+    const digits = block.constraints.digits ?? 2;
+    return `Multiply by 5, 50, 500 (${digits}D)`;
+  } else if (block.type === "vedic_divide_by_5_50_500") {
+    const digits = block.constraints.digits ?? 2;
+    return `Divide by 5, 50, 500 (${digits}D)`;
+  } else if (block.type === "vedic_subtraction_powers_of_10") {
+    const power = block.constraints.powerOf10 ?? 2;
+    return `Subtraction (Powers of 10, ${10**power})`;
+  } else if (block.type === "vedic_special_products_base_1000") {
+    return `Special Products (Base 1000)`;
+  } else if (block.type === "vedic_special_products_cross_multiply") {
+    return `Special Products (Cross Multiply)`;
+  } else if (block.type === "vedic_special_products_cross_base") {
+    return `Special Products (Cross Base)`;
+  } else if (block.type === "vedic_special_products_cross_base_50") {
+    return `Special Products (Cross Base 50)`;
+  } else if (block.type === "vedic_duplex") {
+    const digits = block.constraints.digits ?? 2;
+    return `Find the Duplex (${digits}D)`;
+  } else if (block.type === "vedic_squares_duplex") {
+    const digits = block.constraints.digits ?? 2;
+    return `Squares (Duplex Method, ${digits}D)`;
+  } else if (block.type === "vedic_divide_with_remainder") {
+    const digits = block.constraints.digits ?? 2;
+    return `Divide (with remainder, ${digits}D)`;
+  } else if (block.type === "vedic_divide_by_9s_repetition") {
+    const caseType = block.constraints.divideBy9sCase || "mix";
+    return `Divide by 9's Repetition (${caseType})`;
+  } else if (block.type === "vedic_divide_by_11s_repetition") {
+    const caseType = block.constraints.divideBy11sCase || "mix";
+    return `Divide by 11's Repetition (${caseType})`;
+  } else if (block.type === "vedic_divide_by_7") {
+    const digits = block.constraints.digits ?? 2;
+    return `Divide by 7 (${digits}D)`;
+  } else if (block.type === "vedic_dropping_10_method") {
+    return `Dropping 10 Method`;
+  } else if (block.type === "vedic_vinculum") {
+    return `Vinculum (Coming Soon)`;
+  } else if (block.type === "vedic_devinculum") {
+    return `DeVinculum (Coming Soon)`;
+  }
+  // Vedic Maths Level 3 operations
+  else if (block.type === "vedic_multiply_by_111_999") {
+    const digits = block.constraints.digits ?? 2;
+    return `Multiply by 111-999 (${digits}D)`;
+  } else if (block.type === "vedic_multiply_by_102_109") {
+    const digits = block.constraints.digits ?? 2;
+    return `Multiply by 102-109 (${digits}D)`;
+  } else if (block.type === "vedic_multiply_by_112_119") {
+    const digits = block.constraints.digits ?? 2;
+    return `Multiply by 112-119 (${digits}D)`;
+  } else if (block.type === "vedic_multiplication") {
+    const caseType = block.constraints.multiplicationCase || "mix";
+    return `Multiplication (${caseType})`;
+  } else if (block.type === "vedic_mix_multiplication") {
+    return `Mix Multiplication (2x2x2)`;
+  } else if (block.type === "vedic_combined_operation") {
+    return `Combined Operation`;
+  } else if (block.type === "vedic_fraction_simplification") {
+    return `Fraction (Simplification)`;
+  } else if (block.type === "vedic_fraction_addition") {
+    const caseType = block.constraints.fractionCase || "mix";
+    return `Fraction (Addition, ${caseType})`;
+  } else if (block.type === "vedic_fraction_subtraction") {
+    const caseType = block.constraints.fractionCase || "mix";
+    return `Fraction (Subtraction, ${caseType})`;
+  } else if (block.type === "vedic_squares_level3") {
+    const digits = block.constraints.digits ?? 2;
+    return `Squares (Repeating Digits, ${digits}D)`;
+  } else if (block.type === "vedic_percentage_level3") {
+    const pctMin = block.constraints.percentageMin ?? 1;
+    const pctMax = block.constraints.percentageMax ?? 100;
+    const numDigits = block.constraints.numberDigits ?? 4;
+    return `Percentage (${pctMin}-${pctMax}%, ${numDigits} digits)`;
+  } else if (block.type === "vedic_squares_addition") {
+    const digits = block.constraints.digits ?? 2;
+    return `Squares Addition (${digits}D)`;
+  } else if (block.type === "vedic_squares_subtraction") {
+    const digits = block.constraints.digits ?? 2;
+    return `Squares Subtraction (${digits}D)`;
+  } else if (block.type === "vedic_squares_deviation") {
+    const digits = block.constraints.digits ?? 2;
+    return `Squares (Deviation Method, ${digits}D)`;
+  } else if (block.type === "vedic_cubes") {
+    const digits = block.constraints.digits ?? 2;
+    return `Cubes (${digits}D)`;
+  } else if (block.type === "vedic_check_divisibility") {
+    const divisor = block.constraints.divisorCheck ?? 2;
+    return `Check The Divisibility (by ${divisor})`;
+  } else if (block.type === "vedic_missing_numbers") {
+    return `Missing Numbers`;
+  } else if (block.type === "vedic_duplex_level3") {
+    const digits = block.constraints.digits ?? 2;
+    return `Find The Duplex (${digits}D)`;
+  } else if (block.type === "vedic_squares_large") {
+    const digits = block.constraints.digits ?? 5;
+    return `Squares (Large Numbers, ${digits}D)`;
+  } else if (block.type === "vedic_multiply_by_10001") {
+    const digits = block.constraints.digits ?? 2;
+    return `Multiply by 10001 (${digits}D)`;
+  } else if (block.type === "vedic_box_multiply") {
+    return `Box Multiply (Coming Soon)`;
+  }
+  // Vedic Maths Level 4 operations
+  else if (block.type === "vedic_multiplication_level4") {
+    const multiplicand = block.constraints.multiplicandDigits ?? 3;
+    const multiplier = block.constraints.multiplierDigits ?? 2;
+    return `Multiplication (${multiplicand}×${multiplier})`;
+  } else if (block.type === "vedic_multiply_by_111_999_level4") {
+    const multiplicand = block.constraints.multiplicandDigits ?? 3;
+    const multiplier = block.constraints.multiplierDigits ?? 4;
+    return `Multiplication (111-999, ${multiplicand}×${multiplier}D)`;
+  } else if (block.type === "vedic_decimal_add_sub") {
+    const digits = block.constraints.digits ?? 2;
+    return `Decimal Add/Sub (${digits}D)`;
+  } else if (block.type === "vedic_fun_with_5_level4") {
+    const caseType = block.constraints.funWith5Case || "mix";
+    return `Fun with Five (${caseType})`;
+  } else if (block.type === "vedic_fun_with_10_level4") {
+    const caseType = block.constraints.funWith10Case || "mix";
+    return `Fun with Ten (${caseType})`;
+  } else if (block.type === "vedic_find_x") {
+    return `Find The Value of X`;
+  } else if (block.type === "vedic_hcf") {
+    const first = block.constraints.multiplicandDigits ?? 2;
+    const second = block.constraints.multiplierDigits ?? 2;
+    return `HCF (${first}×${second} digits)`;
+  } else if (block.type === "vedic_lcm_level4") {
+    const first = block.constraints.multiplicandDigits ?? 2;
+    const second = block.constraints.multiplierDigits ?? 2;
+    return `LCM (${first}×${second} digits)`;
+  } else if (block.type === "vedic_bar_add_sub") {
+    return `Bar Addition/Subtraction (Coming Soon)`;
+  } else if (block.type === "vedic_fraction_multiplication") {
+    return `Fraction (Multiplication)`;
+  } else if (block.type === "vedic_fraction_division") {
+    return `Fraction (Division)`;
+  } else if (block.type === "vedic_check_divisibility_level4") {
+    const caseType = block.constraints.divisibilityCase || "random";
+    return `Check The Divisibility (${caseType})`;
+  } else if (block.type === "vedic_division_without_remainder") {
+    const dividend = block.constraints.dividendDigits ?? 2;
+    const divisor = block.constraints.divisorDigits ?? 1;
+    return `Division (without remainder, ${dividend}÷${divisor})`;
+  } else if (block.type === "vedic_division_with_remainder") {
+    const dividend = block.constraints.dividendDigits ?? 3;
+    const divisor = block.constraints.divisorDigits ?? 1;
+    return `Division (with remainder, ${dividend}÷${divisor})`;
+  } else if (block.type === "vedic_divide_by_11_99") {
+    const dividend = block.constraints.dividendDigits ?? 4;
+    return `Divide By 11-99 (${dividend}D)`;
+  } else if (block.type === "vedic_division_9_8_7_6") {
+    const caseType = block.constraints.division9_8_7_6Case || "mix";
+    return `Division (9, 8, 7, 6, case: ${caseType})`;
+  } else if (block.type === "vedic_division_91_121") {
+    const caseType = block.constraints.division91_121Case || "mix";
+    return `Division (91, 121, case: ${caseType})`;
+  } else if (block.type === "vedic_digital_sum") {
+    const digits = block.constraints.digits ?? 4;
+    return `Digital Sum (${digits}D)`;
+  } else if (block.type === "vedic_cubes_base_method") {
+    return `Cubes (Base Method)`;
+  } else if (block.type === "vedic_check_perfect_cube") {
+    const digits = block.constraints.digits ?? 4;
+    return `Check The Perfect Cube (${digits}D)`;
+  } else if (block.type === "vedic_cube_root_level4") {
+    const digits = block.constraints.cubeRootDigits ?? 5;
+    return `Cube Root (${digits} digits)`;
+  } else if (block.type === "vedic_bodmas") {
+    const difficulty = block.constraints.bodmasDifficulty || "medium";
+    return `BODMAS (${difficulty})`;
+  } else if (block.type === "vedic_square_root_level4") {
+    const digits = block.constraints.rootDigits ?? 4;
+    return `Square Root (${digits} digits)`;
+  } else if (block.type === "vedic_magic_square") {
+    return `Magic Square (Coming Soon)`;
+  }
   return `Section`;
 }
 
@@ -130,6 +325,9 @@ export default function PaperCreate() {
   const isVedicLevel4 = location === "/vedic-maths/level-4";
   const isVedicPage = isVedicLevel1 || isVedicLevel2 || isVedicLevel3 || isVedicLevel4;
   
+  // Check if Vedic Level 1 operations should be shown (route OR selected level)
+  // Vedic operations are available for Custom mode and Vedic-Level-1 only
+  
   // Redirect old /create route to /create/basic
   useEffect(() => {
     if (location === "/create") {
@@ -142,32 +340,28 @@ export default function PaperCreate() {
   const [blocks, setBlocks] = useState<BlockConfig[]>([]);
   const [loadingPresets, setLoadingPresets] = useState(false);
   
-  // Track previous location to detect section changes
+  // Track previous location to detect page changes
   const previousLocationRef = useRef<string>(location);
+  const isInitialMount = useRef<boolean>(true);
+  const previousLevelRef = useRef<PaperConfig["level"] | null>(null);
   
-  // Clear blocks when switching between different sections
+  // Clear blocks when switching between different pages
   useEffect(() => {
-    // Get the section type from location
-    const getSectionType = (loc: string): string => {
-      if (loc === "/create/basic") return "basic";
-      if (loc === "/create/junior") return "junior";
-      if (loc === "/create/advanced") return "advanced";
-      if (loc === "/vedic-maths/level-1") return "vedic-1";
-      if (loc === "/vedic-maths/level-2") return "vedic-2";
-      if (loc === "/vedic-maths/level-3") return "vedic-3";
-      if (loc === "/vedic-maths/level-4") return "vedic-4";
-      return "unknown";
-    };
+    // Skip clearing on initial mount
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      previousLocationRef.current = location;
+      return;
+    }
     
-    const currentSection = getSectionType(location);
-    const prevSection = getSectionType(previousLocationRef.current);
-    
-    // Clear blocks when switching to a different section (but not on initial mount)
-    if (previousLocationRef.current !== location && currentSection !== prevSection && prevSection !== "unknown") {
+    // If location changed to a different page, clear everything
+    if (previousLocationRef.current !== location) {
+      console.log(`🔄 Clearing blocks: ${previousLocationRef.current} -> ${location}`);
       setBlocks([]);
       setStep(1);
       setPreviewData(null);
       setValidationErrors({});
+      setLevel("Custom"); // Reset level to Custom when switching pages
     }
     
     previousLocationRef.current = location;
@@ -230,28 +424,29 @@ export default function PaperCreate() {
               type: block.type,
               count: block.count || 10,
               constraints: {
-                digits: block.constraints?.digits,
-                rows: block.constraints?.rows,
-                allowBorrow: block.constraints?.allowBorrow,
-                allowCarry: block.constraints?.allowCarry,
-                minAnswer: block.constraints?.minAnswer,
-                maxAnswer: block.constraints?.maxAnswer,
-                dividendDigits: block.constraints?.dividendDigits,
-                divisorDigits: block.constraints?.divisorDigits,
-                multiplicandDigits: block.constraints?.multiplicandDigits,
-                multiplierDigits: block.constraints?.multiplierDigits,
-                rootDigits: block.constraints?.rootDigits,
-                percentageMin: block.constraints?.percentageMin,
-                percentageMax: block.constraints?.percentageMax,
-                numberDigits: block.constraints?.numberDigits,
+                // Use nullish coalescing to handle null/undefined values properly
+                digits: block.constraints?.digits ?? undefined,
+                rows: block.constraints?.rows ?? undefined,
+                allowBorrow: block.constraints?.allowBorrow ?? undefined,
+                allowCarry: block.constraints?.allowCarry ?? undefined,
+                minAnswer: block.constraints?.minAnswer ?? undefined,
+                maxAnswer: block.constraints?.maxAnswer ?? undefined,
+                dividendDigits: block.constraints?.dividendDigits ?? undefined,
+                divisorDigits: block.constraints?.divisorDigits ?? undefined,
+                multiplicandDigits: block.constraints?.multiplicandDigits ?? undefined,
+                multiplierDigits: block.constraints?.multiplierDigits ?? undefined,
+                rootDigits: block.constraints?.rootDigits ?? undefined,
+                percentageMin: block.constraints?.percentageMin ?? undefined,
+                percentageMax: block.constraints?.percentageMax ?? undefined,
+                numberDigits: block.constraints?.numberDigits ?? undefined,
                 // Vedic Maths constraints
-                base: block.constraints?.base,
-                firstDigits: block.constraints?.firstDigits,
-                secondDigits: block.constraints?.secondDigits,
-                multiplier: block.constraints?.multiplier,
-                multiplierRange: block.constraints?.multiplierRange,
-                divisor: block.constraints?.divisor,
-                tableNumber: block.constraints?.tableNumber,
+                base: block.constraints?.base ?? undefined,
+                firstDigits: block.constraints?.firstDigits ?? undefined,
+                secondDigits: block.constraints?.secondDigits ?? undefined,
+                multiplier: block.constraints?.multiplier ?? undefined,
+                multiplierRange: block.constraints?.multiplierRange ?? undefined,
+                divisor: block.constraints?.divisor ?? undefined,
+                tableNumber: block.constraints?.tableNumber ?? undefined,
               },
               title: block.title || "",
             }));
@@ -293,13 +488,43 @@ export default function PaperCreate() {
       setLoadingPresets(false);
     }
     
-    // Reset to Custom if on Junior/Advanced page and level is AB-X (but allow Junior/Advanced levels)
-    if ((isJuniorPage || isAdvancedPage) && level.startsWith("AB-")) {
+    // Reset to Custom if level doesn't match the page:
+    // - Junior page: only allow "Junior"
+    // - Advanced page: allow "Advanced" and "AB-7" through "AB-10"
+    // - Basic page: allow "AB-1" through "AB-6"
+    if (isJuniorPage && level !== "Junior") {
       setLevel("Custom");
       setBlocks([]);
       setLoadingPresets(false);
+    } else if (isAdvancedPage) {
+      // On Advanced page, allow "Advanced" and "AB-7" through "AB-10"
+      if (level !== "Advanced" && level !== "Custom") {
+        if (level.startsWith("AB-")) {
+          const abNumber = parseInt(level.split("-")[1]);
+          if (abNumber < 7 || abNumber > 10) {
+            // Reset if AB-1 through AB-6
+            setLevel("Custom");
+            setBlocks([]);
+            setLoadingPresets(false);
+          }
+        } else {
+          // Reset if not Advanced, not Custom, and not AB-X
+          setLevel("Custom");
+          setBlocks([]);
+          setLoadingPresets(false);
+        }
+      }
+    } else if (isBasicPage && level.startsWith("AB-")) {
+      // On Basic page, only allow AB-1 through AB-6
+      const abNumber = parseInt(level.split("-")[1]);
+      if (abNumber > 6) {
+        // Reset if AB-7 or higher
+        setLevel("Custom");
+        setBlocks([]);
+        setLoadingPresets(false);
+      }
     }
-    // Note: Junior and Advanced pages allow their respective preset levels
+    // Note: Each page allows its respective preset levels
     
     // Cleanup: abort request if level changes
     return () => {
@@ -307,6 +532,67 @@ export default function PaperCreate() {
       abortController.abort();
     };
   }, [level, isBasicPage, isJuniorPage, isAdvancedPage]);
+
+  // Update block types and titles when Vedic level changes
+  useEffect(() => {
+    // Skip on initial mount or if level hasn't actually changed
+    if (previousLevelRef.current === null) {
+      previousLevelRef.current = level;
+      return;
+    }
+
+    // Only update if level actually changed, we're on a Vedic page, have blocks, and level is a Vedic level
+    if (previousLevelRef.current === level || !isVedicPage || blocks.length === 0 || !level.startsWith("Vedic-Level-")) {
+      previousLevelRef.current = level;
+      return;
+    }
+
+    // Determine the first operation for the new level
+    let defaultType: BlockConfig["type"];
+    let defaultConstraints: any = {
+      digits: 2,
+      rows: 5,
+      multiplicandDigits: 2,
+      multiplierDigits: 1,
+      dividendDigits: 2,
+      divisorDigits: 1
+    };
+
+    if (level === "Vedic-Level-2") {
+      defaultType = "vedic_fun_with_9";
+      defaultConstraints.funWith9Case = "mix";
+    } else if (level === "Vedic-Level-3") {
+      defaultType = "vedic_multiply_by_111_999";
+      defaultConstraints.digits = 2;
+    } else if (level === "Vedic-Level-4") {
+      defaultType = "vedic_multiplication_level4";
+      defaultConstraints.multiplicandDigits = 3;
+      defaultConstraints.multiplierDigits = 2;
+    } else if (level === "Vedic-Level-1") {
+      defaultType = "vedic_multiply_by_11";
+      defaultConstraints.digits = 2;
+    } else {
+      previousLevelRef.current = level;
+      return; // Unknown level, don't update
+    }
+
+    // Update all blocks to use the new level's first operation
+    setBlocks(prevBlocks => {
+      const updatedBlocks = prevBlocks.map(block => {
+        const updatedBlock: BlockConfig = {
+          ...block,
+          type: defaultType,
+          constraints: defaultConstraints,
+          title: generateSectionName({ ...block, type: defaultType, constraints: defaultConstraints } as BlockConfig),
+        };
+        return updatedBlock;
+      });
+      return updatedBlocks;
+    });
+
+    previousLevelRef.current = level;
+  }, [level, isVedicPage, blocks.length]); // Include blocks.length to detect when blocks are added/removed
+
   const [previewData, setPreviewData] = useState<{ blocks: GeneratedBlock[]; seed: number } | null>(null);
   const [step, setStep] = useState<1 | 2>(1);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -317,13 +603,23 @@ export default function PaperCreate() {
   const previewMutation = useMutation({
     mutationFn: previewPaper,
     onSuccess: (data) => {
-      console.log("✅ [PREVIEW] Preview generation successful:", data);
+      try {
+        console.log("✅ [PREVIEW] Preview generation successful:", data);
+        if (!data || !data.blocks || !Array.isArray(data.blocks)) {
+          throw new Error("Invalid preview data received from server");
+        }
       setPreviewData(data);
       setStep(2);
       setShowAnswers(false); // Reset answers visibility when generating new preview
+      } catch (err) {
+        console.error("❌ [PREVIEW] Error processing preview data:", err);
+        // Don't change step, show error
+      }
     },
     onError: (error) => {
       console.error("❌ [PREVIEW] Preview generation failed:", error);
+      // Keep step at 1 so user can fix and retry
+      setStep(1);
       // Error will be displayed in the UI via previewMutation.error
     },
   });
@@ -355,12 +651,41 @@ export default function PaperCreate() {
   });
 
   const addBlock = () => {
-    // Set default type based on page
-    const defaultType: BlockConfig["type"] = isVedicLevel1 
-      ? "vedic_multiply_by_11" 
-      : isJuniorPage 
-        ? "direct_add_sub" 
-        : "add_sub";
+    // Determine default type based on page/level
+    let defaultType: BlockConfig["type"];
+    
+    if (isVedicPage) {
+      // Check the selected level state first (user's selection takes priority)
+      if (level === "Vedic-Level-2") {
+        // Vedic Level 2: first operation is "vedic_fun_with_9"
+        defaultType = "vedic_fun_with_9";
+      } else if (level === "Vedic-Level-3") {
+        // Vedic Level 3: first operation is "vedic_multiply_by_111_999"
+        defaultType = "vedic_multiply_by_111_999";
+      } else if (level === "Vedic-Level-4") {
+        // Vedic Level 4: first operation is "vedic_multiplication_level4"
+        defaultType = "vedic_multiplication_level4";
+      } else if (level === "Vedic-Level-1" || isVedicLevel1 || (level === "Custom" && isVedicLevel1)) {
+        // Vedic Level 1: first operation is "vedic_multiply_by_11"
+        defaultType = "vedic_multiply_by_11";
+      } else if (level === "Custom" && isVedicLevel2) {
+        // Custom mode on Level 2 route
+        defaultType = "vedic_fun_with_9";
+      } else if (level === "Custom" && isVedicLevel3) {
+        // Custom mode on Level 3 route
+        defaultType = "vedic_multiply_by_111_999";
+      } else if (level === "Custom" && isVedicLevel4) {
+        // Custom mode on Level 4 route
+        defaultType = "vedic_multiplication_level4";
+      } else {
+        // Fallback: default to Level 1 operation
+        defaultType = "vedic_multiply_by_11";
+      }
+    } else if (isJuniorPage) {
+      defaultType = "direct_add_sub";
+    } else {
+      defaultType = "add_sub";
+    }
     
     // Set default constraints based on block type
     const defaultConstraints: any = {
@@ -372,9 +697,16 @@ export default function PaperCreate() {
       divisorDigits: 1
     };
     
-    // Type-specific defaults (only for types that could be defaultType)
+    // Type-specific defaults
     if (defaultType === "vedic_multiply_by_11") {
       defaultConstraints.digits = 2;
+    } else if (defaultType === "vedic_fun_with_9") {
+      defaultConstraints.funWith9Case = "mix";
+    } else if (defaultType === "vedic_multiply_by_111_999") {
+      defaultConstraints.digits = 2;
+    } else if (defaultType === "vedic_multiplication_level4") {
+      defaultConstraints.multiplicandDigits = 3;
+      defaultConstraints.multiplierDigits = 2;
     }
     
     const newBlock: BlockConfig = {
@@ -382,10 +714,8 @@ export default function PaperCreate() {
       type: defaultType,
       count: 10,
       constraints: defaultConstraints,
-      title: "",
+      title: generateSectionName({ type: defaultType, constraints: defaultConstraints, count: 10, id: "", title: "" } as BlockConfig),
     };
-    // Auto-generate title based on settings
-    newBlock.title = generateSectionName(newBlock);
     setBlocks([...blocks, newBlock]);
   };
 
@@ -456,13 +786,35 @@ export default function PaperCreate() {
     const typeChanged = updates.type !== undefined && updates.type !== oldBlock.type;
     const constraintsChanged = updates.constraints !== undefined;
     
+    // Check if constraints actually changed (not just the object reference)
+    let constraintsActuallyChanged = false;
+    if (constraintsChanged) {
+      // Compare key constraint values between old and updated block
+      const oldConstraints = oldBlock.constraints || {};
+      const newConstraints = updatedBlock.constraints || {};
+      const constraintKeys = ['digits', 'rows', 'multiplicandDigits', 'multiplierDigits', 
+                              'dividendDigits', 'divisorDigits', 'rootDigits', 'percentageMin', 
+                              'percentageMax', 'numberDigits', 'base', 'firstDigits', 'secondDigits',
+                              'multiplier', 'multiplierRange', 'divisor', 'tableNumber',
+                              'funWith9Case', 'divideBy9sCase', 'divideBy11sCase', 'powerOf10',
+                              'multiplicationCase', 'fractionCase', 'divisorCheck',
+                              'funWith5Case', 'funWith10Case', 'divisibilityCase',
+                              'division9_8_7_6Case', 'division91_121Case', 'bodmasDifficulty',
+                              'cubeRootDigits'];
+      constraintsActuallyChanged = constraintKeys.some(key => {
+        const oldVal = oldConstraints[key as keyof typeof oldConstraints];
+        const newVal = newConstraints[key as keyof typeof newConstraints];
+        return oldVal !== newVal;
+      });
+    }
+    
     // Handle title updates
     if (updates.title !== undefined) {
       // User is explicitly setting the title
       updatedBlock.title = updates.title;
-    } else if (typeChanged || constraintsChanged) {
+    } else if (typeChanged || constraintsActuallyChanged) {
       // Type or constraints changed - auto-regenerate if title was auto-generated
-      if (oldBlock.title === oldAutoTitle || !oldBlock.title) {
+      if (oldBlock.title === oldAutoTitle || !oldBlock.title || oldBlock.title.trim() === "") {
         updatedBlock.title = newAutoTitle;
       }
       // Otherwise, keep the existing custom title
@@ -531,6 +883,51 @@ export default function PaperCreate() {
     return validationErrors[blockIndex]?.[fieldName] || null;
   };
 
+  const handleAttemptPaper = () => {
+    if (!previewData) {
+      alert("Please generate a preview first");
+      return;
+    }
+    
+    console.log("🟢 [PAPER CREATE] Preparing to attempt paper...");
+    console.log("🟢 [PAPER CREATE] Preview data:", {
+      blocksCount: previewData.blocks.length,
+      seed: previewData.seed
+    });
+    
+    // Store paper data in sessionStorage for PaperAttempt page
+    const paperData = {
+      config: {
+        level: level || "Custom",
+        title: title || "Math Paper",
+        totalQuestions: "20",
+        blocks,
+        orientation: "portrait" as const
+      },
+      blocks: previewData.blocks,
+      seed: previewData.seed
+    };
+    
+    try {
+      const dataString = JSON.stringify(paperData);
+      console.log("🟢 [PAPER CREATE] Storing paper data, size:", dataString.length);
+      sessionStorage.setItem("paperAttemptData", dataString);
+      
+      // Verify it was stored
+      const stored = sessionStorage.getItem("paperAttemptData");
+      if (stored) {
+        console.log("✅ [PAPER CREATE] Data stored successfully, navigating...");
+        setLocation("/paper/attempt");
+      } else {
+        console.error("❌ [PAPER CREATE] Failed to store data in sessionStorage");
+        alert("Failed to prepare paper. Please try again.");
+      }
+    } catch (e) {
+      console.error("❌ [PAPER CREATE] Error storing paper data:", e);
+      alert("Failed to prepare paper. The data might be too large. Please try again.");
+    }
+  };
+
   const handlePreview = () => {
     // Title now has a default, so we can skip this check or use the default
     const finalTitle = title.trim() || "Math Practice Paper";
@@ -556,7 +953,7 @@ export default function PaperCreate() {
     let hasErrors = false;
     
     if (shouldValidate && blocks.length > 0) {
-      blocks.forEach((block, index) => {
+    blocks.forEach((block, index) => {
       const blockErrors: Record<string, string> = {};
       
       // Validate count (questions) - except for vedic_tables which uses rows
@@ -619,9 +1016,9 @@ export default function PaperCreate() {
             hasErrors = true;
           }
         }
-      } else if (block.type === "decimal_multiplication" || block.type === "decimal_division") {
+      } else if (block.type === "decimal_multiplication") {
         const multiplicandDigits = block.constraints.multiplicandDigits;
-        const fieldName = block.type === "decimal_multiplication" ? "Multiplicand Digits (Before Decimal)" : "Dividend Digits";
+        const fieldName = "Multiplicand Digits (Before Decimal)";
         if (multiplicandDigits !== undefined && multiplicandDigits !== -1) {
           if (multiplicandDigits < 1 || multiplicandDigits > 20) {
             blockErrors.multiplicandDigits = multiplicandDigits < 1 ? `Minimum value for ${fieldName} is 1` : `Maximum value for ${fieldName} is 20`;
@@ -629,11 +1026,29 @@ export default function PaperCreate() {
           }
         }
         const multiplierDigits = block.constraints.multiplierDigits;
-        const fieldName2 = block.type === "decimal_multiplication" ? "Multiplier Digits" : "Divisor Digits";
+        const fieldName2 = "Multiplier Digits";
         if (multiplierDigits !== undefined && multiplierDigits !== -1) {
-          const min = block.type === "decimal_multiplication" ? 0 : 1;
+          const min = 0;
           if (multiplierDigits < min || multiplierDigits > 20) {
             blockErrors.multiplierDigits = multiplierDigits < min ? `Minimum value for ${fieldName2} is ${min}` : `Maximum value for ${fieldName2} is 20`;
+            hasErrors = true;
+          }
+        }
+      } else if (block.type === "decimal_division") {
+        const dividendDigits = block.constraints.dividendDigits;
+        const fieldName = "Dividend Digits";
+        if (dividendDigits !== undefined && dividendDigits !== -1) {
+          if (dividendDigits < 1 || dividendDigits > 20) {
+            blockErrors.dividendDigits = dividendDigits < 1 ? `Minimum value for ${fieldName} is 1` : `Maximum value for ${fieldName} is 20`;
+            hasErrors = true;
+          }
+        }
+        const divisorDigits = block.constraints.divisorDigits;
+        const fieldName2 = "Divisor Digits";
+        if (divisorDigits !== undefined && divisorDigits !== -1) {
+          const min = 1;
+          if (divisorDigits < min || divisorDigits > 20) {
+            blockErrors.divisorDigits = divisorDigits < min ? `Minimum value for ${fieldName2} is ${min}` : `Maximum value for ${fieldName2} is 20`;
             hasErrors = true;
           }
         }
@@ -693,7 +1108,7 @@ export default function PaperCreate() {
       if (Object.keys(blockErrors).length > 0) {
         errors[index] = blockErrors;
       }
-      });
+    });
     }
     
     if (hasErrors) {
@@ -886,7 +1301,7 @@ export default function PaperCreate() {
 
             {/* Blocks Section */}
             <div>
-              <div className="flex justify-between items-center mb-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900">Question Blocks</h2>
                   {blocks.length > 0 && (
@@ -895,13 +1310,33 @@ export default function PaperCreate() {
                     </p>
                   )}
                 </div>
-                <button
-                  onClick={addBlock}
-                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
-                >
-                  <Plus className="w-5 h-5" />
-                  Add Block
-                </button>
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                  <button
+                    onClick={() => {
+                      if (blocks.length === 0) return;
+                      if (confirm("Are you sure you want to clear all blocks? This action cannot be undone.")) {
+                        setBlocks([]);
+                      }
+                    }}
+                    disabled={blocks.length === 0}
+                    className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold shadow-lg transition-all duration-200 whitespace-nowrap ${
+                      blocks.length > 0
+                        ? "bg-gradient-to-r from-red-600 to-red-700 text-white hover:shadow-xl transform hover:-translate-y-0.5 cursor-pointer"
+                        : "bg-gray-300 text-gray-500 cursor-not-allowed opacity-60"
+                    }`}
+                    title={blocks.length > 0 ? "Clear all blocks" : "No blocks to clear"}
+                  >
+                    <Trash2 className="w-5 h-5" />
+                    Clear All Blocks
+                  </button>
+                  <button
+                    onClick={addBlock}
+                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 whitespace-nowrap"
+                  >
+                    <Plus className="w-5 h-5" />
+                    Add Block
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-4">
@@ -962,11 +1397,41 @@ export default function PaperCreate() {
                         {/* Add Block Below Button */}
                         <button
                           onClick={() => {
-                            const defaultType: BlockConfig["type"] = isVedicLevel1 
-                              ? "vedic_multiply_by_11" 
-                              : isJuniorPage 
-                                ? "direct_add_sub" 
-                                : "add_sub";
+                            // Determine default type based on page/level
+                            let defaultType: BlockConfig["type"];
+                            
+                            if (isVedicPage) {
+                              // Check the selected level state first (user's selection takes priority)
+                              if (level === "Vedic-Level-2") {
+                                // Vedic Level 2: first operation is "vedic_fun_with_9"
+                                defaultType = "vedic_fun_with_9";
+                              } else if (level === "Vedic-Level-3") {
+                                // Vedic Level 3: first operation is "vedic_multiply_by_111_999"
+                                defaultType = "vedic_multiply_by_111_999";
+                              } else if (level === "Vedic-Level-4") {
+                                // Vedic Level 4: first operation is "vedic_multiplication_level4"
+                                defaultType = "vedic_multiplication_level4";
+                              } else if (level === "Vedic-Level-1" || isVedicLevel1 || (level === "Custom" && isVedicLevel1)) {
+                                // Vedic Level 1: first operation is "vedic_multiply_by_11"
+                                defaultType = "vedic_multiply_by_11";
+                              } else if (level === "Custom" && isVedicLevel2) {
+                                // Custom mode on Level 2 route
+                                defaultType = "vedic_fun_with_9";
+                              } else if (level === "Custom" && isVedicLevel3) {
+                                // Custom mode on Level 3 route
+                                defaultType = "vedic_multiply_by_111_999";
+                              } else if (level === "Custom" && isVedicLevel4) {
+                                // Custom mode on Level 4 route
+                                defaultType = "vedic_multiplication_level4";
+                              } else {
+                                // Fallback: default to Level 1 operation
+                                defaultType = "vedic_multiply_by_11";
+                              }
+                            } else if (isJuniorPage) {
+                              defaultType = "direct_add_sub";
+                            } else {
+                              defaultType = "add_sub";
+                            }
                             
                             // Set default constraints based on block type
                             const defaultConstraints: any = {
@@ -978,19 +1443,31 @@ export default function PaperCreate() {
                               divisorDigits: 1
                             };
                             
-                            // Type-specific defaults (only for types that could be defaultType)
+                            // Type-specific defaults
                             if (defaultType === "vedic_multiply_by_11") {
                               defaultConstraints.digits = 2;
+                            } else if (defaultType === "vedic_fun_with_9") {
+                              defaultConstraints.funWith9Case = "mix";
+                            } else if (defaultType === "vedic_multiply_by_111_999") {
+                              defaultConstraints.digits = 2;
+                            } else if (defaultType === "vedic_multiplication_level4") {
+                              defaultConstraints.multiplicandDigits = 3;
+                              defaultConstraints.multiplierDigits = 2;
                             }
                             
-                            const newBlock: BlockConfig = {
+                            const tempBlock: BlockConfig = {
                               id: `block-${Date.now()}`,
                               type: defaultType,
                               count: 10,
                               constraints: defaultConstraints,
                               title: "",
                             };
-                            newBlock.title = generateSectionName(newBlock);
+                            // Auto-generate title based on settings
+                            const generatedTitle = generateSectionName(tempBlock);
+                            const newBlock: BlockConfig = {
+                              ...tempBlock,
+                              title: generatedTitle,
+                            };
                             const newBlocks = [...blocks];
                             newBlocks.splice(index + 1, 0, newBlock);
                             setBlocks(newBlocks);
@@ -1022,10 +1499,50 @@ export default function PaperCreate() {
                           }}
                           className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white"
                         >
-                          {/* Show operations based on page route */}
-                          {isVedicLevel1 ? (
+                          {/* Show operations based on page route and selected level */}
+                          {/* Abacus operations: show when on Abacus pages (Junior, Basic, Advanced) */}
+                          {(isJuniorPage || isBasicPage || isAdvancedPage) ? (
                             <>
-                              <optgroup label="Multiplication">
+                              {isJuniorPage ? (
+                                <optgroup label="Junior Operations">
+                                  <option value="direct_add_sub">Direct Add/Sub</option>
+                                  <option value="small_friends_add_sub">Small Friends Add/Sub</option>
+                                  <option value="big_friends_add_sub">Big Friends Add/Sub</option>
+                                </optgroup>
+                              ) : isAdvancedPage ? (
+                                <>
+                                  <optgroup label="Basic Operations">
+                                    <option value="add_sub">Add/Sub</option>
+                                    <option value="addition">Addition</option>
+                                    <option value="subtraction">Subtraction</option>
+                                    <option value="multiplication">Multiplication</option>
+                                    <option value="division">Division</option>
+                                  </optgroup>
+                                  <optgroup label="Advanced Operations">
+                                    <option value="decimal_add_sub">Decimal Add/Sub</option>
+                                    <option value="decimal_multiplication">Decimal Multiplication</option>
+                                    <option value="decimal_division">Decimal Division</option>
+                                    <option value="integer_add_sub">Integer Add/Sub</option>
+                                    <option value="lcm">LCM</option>
+                                    <option value="gcd">GCD</option>
+                                    <option value="square_root">Square Root</option>
+                                    <option value="cube_root">Cube Root</option>
+                                    <option value="percentage">Percentage (%)</option>
+                                  </optgroup>
+                                </>
+                              ) : (
+                                <optgroup label="Basic Operations">
+                                  <option value="add_sub">Add/Sub</option>
+                                  <option value="addition">Addition</option>
+                                  <option value="subtraction">Subtraction</option>
+                                  <option value="multiplication">Multiplication</option>
+                                  <option value="division">Division</option>
+                                </optgroup>
+                              )}
+                            </>
+                          ) : ((isVedicLevel1 || level === "Vedic-Level-1" || (level === "Custom" && isVedicPage)) && !(level === "Vedic-Level-2" || level === "Vedic-Level-3" || level === "Vedic-Level-4")) ? (
+                            <>
+                              <optgroup label="Level 1 - Multiplication">
                                 <option value="vedic_multiply_by_11">Multiply by 11</option>
                                 <option value="vedic_multiply_by_101">Multiply by 101</option>
                                 <option value="vedic_multiply_by_12_19">Multiply by 12-19</option>
@@ -1034,57 +1551,268 @@ export default function PaperCreate() {
                                 <option value="vedic_multiply_by_4">Multiply by 4</option>
                                 <option value="vedic_multiply_by_6">Multiply by 6</option>
                               </optgroup>
-                              <optgroup label="Division">
+                              <optgroup label="Level 1 - Division">
                                 <option value="vedic_divide_by_2">Divide by 2</option>
                                 <option value="vedic_divide_by_4">Divide by 4</option>
                                 <option value="vedic_divide_single_digit">Divide Single Digit</option>
                                 <option value="vedic_divide_by_11">Divide by 11</option>
                               </optgroup>
-                              <optgroup label="Subtraction">
+                              <optgroup label="Level 1 - Subtraction">
                                 <option value="vedic_subtraction_complement">Subtraction (Complements)</option>
                                 <option value="vedic_subtraction_normal">Subtraction (Normal)</option>
                               </optgroup>
-                              <optgroup label="Special Products">
+                              <optgroup label="Level 1 - Special Products">
                                 <option value="vedic_special_products_base_100">Special Products (Base 100)</option>
                                 <option value="vedic_special_products_base_50">Special Products (Base 50)</option>
                               </optgroup>
-                              <optgroup label="Other">
+                              <optgroup label="Level 1 - Other">
                                 <option value="vedic_addition">Addition</option>
                                 <option value="vedic_squares_base_10">Squares (Base 10)</option>
                                 <option value="vedic_squares_base_100">Squares (Base 100)</option>
                                 <option value="vedic_squares_base_1000">Squares (Base 1000)</option>
                                 <option value="vedic_tables">Tables</option>
                               </optgroup>
-                            </>
-                          ) : isVedicLevel2 || isVedicLevel3 || isVedicLevel4 ? (
-                            <optgroup label="Coming Soon">
-                              <option value="addition">Coming Soon</option>
-                            </optgroup>
-                          ) : isJuniorPage ? (
-                            <optgroup label="Junior Operations">
-                              <option value="direct_add_sub">Direct Add/Sub</option>
-                              <option value="small_friends_add_sub">Small Friends Add/Sub</option>
-                              <option value="big_friends_add_sub">Big Friends Add/Sub</option>
-                            </optgroup>
-                          ) : isAdvancedPage ? (
-                            <>
-                              <optgroup label="Basic Operations">
-                                <option value="add_sub">Add/Sub</option>
-                                <option value="addition">Addition</option>
-                                <option value="subtraction">Subtraction</option>
-                                <option value="multiplication">Multiplication</option>
-                                <option value="division">Division</option>
+                              {/* Show Level 2 operations in Custom mode */}
+                              {level === "Custom" && (
+                                <>
+                                  <optgroup label="Level 2 - Fun with Numbers">
+                                    <option value="vedic_fun_with_9">Fun with 9</option>
+                                    <option value="vedic_fun_with_5">Fun with 5</option>
+                                    <option value="vedic_fun_with_10">Fun with 10</option>
+                                  </optgroup>
+                                  <optgroup label="Level 2 - Multiplication">
+                                    <option value="vedic_multiply_by_1001">Multiply by 1001</option>
+                                    <option value="vedic_multiply_by_5_25_125">Multiply by 5, 25, 125</option>
+                                    <option value="vedic_multiply_by_5_50_500">Multiply by 5, 50, 500</option>
+                                  </optgroup>
+                                  <optgroup label="Level 2 - Division">
+                                    <option value="vedic_divide_by_5_25_125">Divide by 5, 25, 125</option>
+                                    <option value="vedic_divide_by_5_50_500">Divide by 5, 50, 500</option>
+                                    <option value="vedic_divide_with_remainder">Divide (with remainder)</option>
+                                    <option value="vedic_divide_by_9s_repetition">Divide by 9's Repetition</option>
+                                    <option value="vedic_divide_by_11s_repetition">Divide by 11's Repetition</option>
+                                    <option value="vedic_divide_by_7">Divide by 7</option>
+                                  </optgroup>
+                                  <optgroup label="Level 2 - Subtraction">
+                                    <option value="vedic_subtraction_powers_of_10">Subtraction (Powers of 10)</option>
+                                  </optgroup>
+                                  <optgroup label="Level 2 - Special Products">
+                                    <option value="vedic_special_products_base_1000">Special Products (Base 1000)</option>
+                                    <option value="vedic_special_products_cross_multiply">Special Products (Cross Multiply)</option>
+                                    <option value="vedic_special_products_cross_base">Special Products (Cross Base)</option>
+                                    <option value="vedic_special_products_cross_base_50">Special Products (Cross Base 50)</option>
+                                  </optgroup>
+                                  <optgroup label="Level 2 - Duplex & Squares">
+                                    <option value="vedic_duplex">Find the Duplex</option>
+                                    <option value="vedic_squares_duplex">Squares (Duplex Method)</option>
+                                  </optgroup>
+                                  <optgroup label="Level 2 - Other">
+                                    <option value="vedic_dropping_10_method">Dropping 10 Method</option>
+                                    <option value="vedic_vinculum">Vinculum (Coming Soon)</option>
+                                    <option value="vedic_devinculum">DeVinculum (Coming Soon)</option>
                               </optgroup>
-                              <optgroup label="Advanced Operations">
-                                <option value="decimal_add_sub">Decimal Add/Sub</option>
-                                <option value="decimal_multiplication">Decimal Multiplication</option>
-                                <option value="decimal_division">Decimal Division</option>
-                                <option value="integer_add_sub">Integer Add/Sub</option>
-                                <option value="lcm">LCM</option>
-                                <option value="gcd">GCD</option>
-                                <option value="square_root">Square Root</option>
-                                <option value="cube_root">Cube Root</option>
-                                <option value="percentage">Percentage (%)</option>
+                            </>
+                              )}
+                              {/* Show Level 3 operations in Custom mode */}
+                              {level === "Custom" && (
+                                <>
+                                  <optgroup label="Level 3 - Multiplication">
+                                    <option value="vedic_multiply_by_111_999">Multiply by 111-999</option>
+                                    <option value="vedic_multiply_by_102_109">Multiply by 102-109</option>
+                                    <option value="vedic_multiply_by_112_119">Multiply by 112-119</option>
+                                    <option value="vedic_multiplication">Multiplication (2x2, 3x2, etc.)</option>
+                                    <option value="vedic_mix_multiplication">Mix Multiplication (2x2x2)</option>
+                                    <option value="vedic_combined_operation">Combined Operation</option>
+                                    <option value="vedic_multiply_by_10001">Multiply by 10001</option>
+                            </optgroup>
+                                  <optgroup label="Level 3 - Fractions">
+                                    <option value="vedic_fraction_simplification">Fraction (Simplification)</option>
+                                    <option value="vedic_fraction_addition">Fraction (Addition)</option>
+                                    <option value="vedic_fraction_subtraction">Fraction (Subtraction)</option>
+                            </optgroup>
+                                  <optgroup label="Level 3 - Squares">
+                                    <option value="vedic_squares_level3">Squares (Repeating Digits)</option>
+                                    <option value="vedic_squares_addition">Squares Addition</option>
+                                    <option value="vedic_squares_subtraction">Squares Subtraction</option>
+                                    <option value="vedic_squares_deviation">Squares (Deviation Method)</option>
+                                    <option value="vedic_squares_large">Squares (Large Numbers)</option>
+                                  </optgroup>
+                                  <optgroup label="Level 3 - Other">
+                                    <option value="vedic_percentage_level3">Percentage</option>
+                                    <option value="vedic_cubes">Cubes</option>
+                                    <option value="vedic_check_divisibility">Check The Divisibility</option>
+                                    <option value="vedic_missing_numbers">Missing Numbers</option>
+                                    <option value="vedic_duplex_level3">Find The Duplex</option>
+                                    <option value="vedic_box_multiply">Box Multiply (Coming Soon)</option>
+                                  </optgroup>
+                                </>
+                              )}
+                              {/* Show Level 4 operations in Custom mode */}
+                              {level === "Custom" && (
+                                <>
+                                  <optgroup label="Level 4 - Multiplication">
+                                    <option value="vedic_multiplication_level4">Multiplication</option>
+                                    <option value="vedic_multiply_by_111_999_level4">Multiplication (111-999)</option>
+                              </optgroup>
+                                  <optgroup label="Level 4 - Addition/Subtraction">
+                                    <option value="vedic_decimal_add_sub">Addition/Subtraction</option>
+                                    <option value="vedic_bar_add_sub">Bar Addition/Subtraction (Coming Soon)</option>
+                                  </optgroup>
+                                  <optgroup label="Level 4 - Fun with Numbers">
+                                    <option value="vedic_fun_with_5_level4">Fun with Five</option>
+                                    <option value="vedic_fun_with_10_level4">Fun with Ten</option>
+                                  </optgroup>
+                                  <optgroup label="Level 4 - Algebra">
+                                    <option value="vedic_find_x">Find The Value of X</option>
+                                  </optgroup>
+                                  <optgroup label="Level 4 - Division">
+                                    <option value="vedic_division_without_remainder">Division (without remainder)</option>
+                                    <option value="vedic_division_with_remainder">Division (with remainder)</option>
+                                    <option value="vedic_divide_by_11_99">Divide By 11-99</option>
+                                    <option value="vedic_division_9_8_7_6">Division (9, 8, 7, 6)</option>
+                                    <option value="vedic_division_91_121">Division (91, 121)</option>
+                                  </optgroup>
+                                  <optgroup label="Level 4 - Fractions">
+                                    <option value="vedic_fraction_multiplication">Fraction (Multiplication)</option>
+                                    <option value="vedic_fraction_division">Fraction (Division)</option>
+                                  </optgroup>
+                                  <optgroup label="Level 4 - HCF &amp; LCM">
+                                    <option value="vedic_hcf">HCF</option>
+                                    <option value="vedic_lcm_level4">LCM</option>
+                                  </optgroup>
+                                  <optgroup label="Level 4 - Divisibility &amp; Digital">
+                                    <option value="vedic_check_divisibility_level4">Check The Divisibility</option>
+                                    <option value="vedic_digital_sum">Digital Sum</option>
+                                  </optgroup>
+                                  <optgroup label="Level 4 - Cubes &amp; Cube Root">
+                                    <option value="vedic_cubes_base_method">Cubes (Base Method)</option>
+                                    <option value="vedic_check_perfect_cube">Check The Perfect Cube</option>
+                                    <option value="vedic_cube_root_level4">Cube Root</option>
+                                  </optgroup>
+                                  <optgroup label="Level 4 - Other">
+                                    <option value="vedic_square_root_level4">Square Root</option>
+                                    <option value="vedic_bodmas">BODMAS</option>
+                                    <option value="vedic_magic_square">Magic Square (Coming Soon)</option>
+                                  </optgroup>
+                                </>
+                              )}
+                            </>
+                          ) : (level === "Vedic-Level-2") ? (
+                            <>
+                              <optgroup label="Fun with Numbers">
+                                <option value="vedic_fun_with_9">Fun with 9</option>
+                                <option value="vedic_fun_with_5">Fun with 5</option>
+                                <option value="vedic_fun_with_10">Fun with 10</option>
+                              </optgroup>
+                              <optgroup label="Multiplication">
+                                <option value="vedic_multiply_by_1001">Multiply by 1001</option>
+                                <option value="vedic_multiply_by_5_25_125">Multiply by 5, 25, 125</option>
+                                <option value="vedic_multiply_by_5_50_500">Multiply by 5, 50, 500</option>
+                              </optgroup>
+                              <optgroup label="Division">
+                                <option value="vedic_divide_by_5_25_125">Divide by 5, 25, 125</option>
+                                <option value="vedic_divide_by_5_50_500">Divide by 5, 50, 500</option>
+                                <option value="vedic_divide_with_remainder">Divide (with remainder)</option>
+                                <option value="vedic_divide_by_9s_repetition">Divide by 9's Repetition</option>
+                                <option value="vedic_divide_by_11s_repetition">Divide by 11's Repetition</option>
+                                <option value="vedic_divide_by_7">Divide by 7</option>
+                              </optgroup>
+                              <optgroup label="Subtraction">
+                                <option value="vedic_subtraction_powers_of_10">Subtraction (Powers of 10)</option>
+                              </optgroup>
+                              <optgroup label="Special Products">
+                                <option value="vedic_special_products_base_1000">Special Products (Base 1000)</option>
+                                <option value="vedic_special_products_cross_multiply">Special Products (Cross Multiply)</option>
+                                <option value="vedic_special_products_cross_base">Special Products (Cross Base)</option>
+                                <option value="vedic_special_products_cross_base_50">Special Products (Cross Base 50)</option>
+                              </optgroup>
+                              <optgroup label="Duplex & Squares">
+                                <option value="vedic_duplex">Find the Duplex</option>
+                                <option value="vedic_squares_duplex">Squares (Duplex Method)</option>
+                              </optgroup>
+                              <optgroup label="Other">
+                                <option value="vedic_dropping_10_method">Dropping 10 Method</option>
+                                <option value="vedic_vinculum">Vinculum (Coming Soon)</option>
+                                <option value="vedic_devinculum">DeVinculum (Coming Soon)</option>
+                              </optgroup>
+                            </>
+                          ) : (level === "Vedic-Level-3") ? (
+                            <>
+                              <optgroup label="Multiplication">
+                                <option value="vedic_multiply_by_111_999">Multiply by 111-999</option>
+                                <option value="vedic_multiply_by_102_109">Multiply by 102-109</option>
+                                <option value="vedic_multiply_by_112_119">Multiply by 112-119</option>
+                                <option value="vedic_multiplication">Multiplication (2x2, 3x2, etc.)</option>
+                                <option value="vedic_mix_multiplication">Mix Multiplication (2x2x2)</option>
+                                <option value="vedic_combined_operation">Combined Operation</option>
+                                <option value="vedic_multiply_by_10001">Multiply by 10001</option>
+                              </optgroup>
+                              <optgroup label="Fractions">
+                                <option value="vedic_fraction_simplification">Fraction (Simplification)</option>
+                                <option value="vedic_fraction_addition">Fraction (Addition)</option>
+                                <option value="vedic_fraction_subtraction">Fraction (Subtraction)</option>
+                              </optgroup>
+                              <optgroup label="Squares">
+                                <option value="vedic_squares_level3">Squares (Repeating Digits)</option>
+                                <option value="vedic_squares_addition">Squares Addition</option>
+                                <option value="vedic_squares_subtraction">Squares Subtraction</option>
+                                <option value="vedic_squares_deviation">Squares (Deviation Method)</option>
+                                <option value="vedic_squares_large">Squares (Large Numbers)</option>
+                              </optgroup>
+                              <optgroup label="Other">
+                                <option value="vedic_percentage_level3">Percentage</option>
+                                <option value="vedic_cubes">Cubes</option>
+                                <option value="vedic_check_divisibility">Check The Divisibility</option>
+                                <option value="vedic_missing_numbers">Missing Numbers</option>
+                                <option value="vedic_duplex_level3">Find The Duplex</option>
+                                <option value="vedic_box_multiply">Box Multiply (Coming Soon)</option>
+                              </optgroup>
+                            </>
+                          ) : level === "Vedic-Level-4" ? (
+                            <>
+                              <optgroup label="Multiplication">
+                                <option value="vedic_multiplication_level4">Multiplication</option>
+                                <option value="vedic_multiply_by_111_999_level4">Multiplication (111-999)</option>
+                              </optgroup>
+                              <optgroup label="Addition/Subtraction">
+                                <option value="vedic_decimal_add_sub">Addition/Subtraction</option>
+                                <option value="vedic_bar_add_sub">Bar Addition/Subtraction (Coming Soon)</option>
+                              </optgroup>
+                              <optgroup label="Fun with Numbers">
+                                <option value="vedic_fun_with_5_level4">Fun with Five</option>
+                                <option value="vedic_fun_with_10_level4">Fun with Ten</option>
+                              </optgroup>
+                              <optgroup label="Algebra">
+                                <option value="vedic_find_x">Find The Value of X</option>
+                              </optgroup>
+                              <optgroup label="Division">
+                                <option value="vedic_division_without_remainder">Division (without remainder)</option>
+                                <option value="vedic_division_with_remainder">Division (with remainder)</option>
+                                <option value="vedic_divide_by_11_99">Divide By 11-99</option>
+                                <option value="vedic_division_9_8_7_6">Division (9, 8, 7, 6)</option>
+                                <option value="vedic_division_91_121">Division (91, 121)</option>
+                              </optgroup>
+                              <optgroup label="Fractions">
+                                <option value="vedic_fraction_multiplication">Fraction (Multiplication)</option>
+                                <option value="vedic_fraction_division">Fraction (Division)</option>
+                              </optgroup>
+                              <optgroup label="HCF &amp; LCM">
+                                <option value="vedic_hcf">HCF</option>
+                                <option value="vedic_lcm_level4">LCM</option>
+                              </optgroup>
+                              <optgroup label="Divisibility &amp; Digital">
+                                <option value="vedic_check_divisibility_level4">Check The Divisibility</option>
+                                <option value="vedic_digital_sum">Digital Sum</option>
+                              </optgroup>
+                              <optgroup label="Cubes &amp; Cube Root">
+                                <option value="vedic_cubes_base_method">Cubes (Base Method)</option>
+                                <option value="vedic_check_perfect_cube">Check The Perfect Cube</option>
+                                <option value="vedic_cube_root_level4">Cube Root</option>
+                              </optgroup>
+                              <optgroup label="Other">
+                                <option value="vedic_square_root_level4">Square Root</option>
+                                <option value="vedic_bodmas">BODMAS</option>
+                                <option value="vedic_magic_square">Magic Square (Coming Soon)</option>
                               </optgroup>
                             </>
                           ) : (
@@ -1312,28 +2040,28 @@ export default function PaperCreate() {
                         </>
                       )}
 
-                      {(block.type === "multiplication" || block.type === "division") && (
+                      {(block.type === "multiplication" || block.type === "division" || block.type === "vedic_multiplication_level4" || block.type === "vedic_multiply_by_111_999_level4") && (
                         <>
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                              {block.type === "multiplication" ? "Multiplicand Digits (1-20)" : "Dividend Digits (1-20)"}
+                              {(block.type === "multiplication" || block.type === "vedic_multiplication_level4" || block.type === "vedic_multiply_by_111_999_level4") ? "Multiplicand Digits (1-20)" : "Dividend Digits (1-20)"}
                             </label>
                             <input
                               type="text"
                               value={
-                                block.type === "multiplication"
-                                  ? block.constraints.multiplicandDigits === -1 ? "" : String(block.constraints.multiplicandDigits ?? 2)
+                                (block.type === "multiplication" || block.type === "vedic_multiplication_level4" || block.type === "vedic_multiply_by_111_999_level4")
+                                  ? block.constraints.multiplicandDigits === -1 ? "" : String(block.constraints.multiplicandDigits ?? (block.type === "vedic_multiplication_level4" ? 3 : block.type === "vedic_multiply_by_111_999_level4" ? 3 : 2))
                                   : block.constraints.dividendDigits === -1 ? "" : String(block.constraints.dividendDigits ?? 2)
                               }
                               onChange={(e) => {
                                 const val = e.target.value;
-                                const fieldName = block.type === "multiplication" ? "multiplicandDigits" : "dividendDigits";
-                                const fieldLabel = block.type === "multiplication" ? "Multiplicand Digits" : "Dividend Digits";
+                                const fieldName = (block.type === "multiplication" || block.type === "vedic_multiplication_level4" || block.type === "vedic_multiply_by_111_999_level4") ? "multiplicandDigits" : "dividendDigits";
+                                const fieldLabel = (block.type === "multiplication" || block.type === "vedic_multiplication_level4" || block.type === "vedic_multiply_by_111_999_level4") ? "Multiplicand Digits" : "Dividend Digits";
                                 
                                 if (val === "" || /^\d+$/.test(val)) {
                                   if (val === "") {
                                     setFieldError(index, fieldName, null);
-                                    if (block.type === "multiplication") {
+                                    if (block.type === "multiplication" || block.type === "vedic_multiplication_level4" || block.type === "vedic_multiply_by_111_999_level4") {
                                       updateBlock(index, {
                                         constraints: { ...block.constraints, multiplicandDigits: -1 as any },
                                       });
@@ -1344,7 +2072,7 @@ export default function PaperCreate() {
                                     }
                                   } else {
                                     const numVal = parseInt(val);
-                                    if (block.type === "multiplication") {
+                                    if (block.type === "multiplication" || block.type === "vedic_multiplication_level4" || block.type === "vedic_multiply_by_111_999_level4") {
                                       updateBlock(index, {
                                         constraints: { ...block.constraints, multiplicandDigits: numVal },
                                       });
@@ -1366,13 +2094,13 @@ export default function PaperCreate() {
                               }}
                               onBlur={(e) => {
                                 const val = e.target.value;
-                                const fieldName = block.type === "multiplication" ? "multiplicandDigits" : "dividendDigits";
+                                const fieldName = (block.type === "multiplication" || block.type === "vedic_multiplication_level4" || block.type === "vedic_multiply_by_111_999_level4") ? "multiplicandDigits" : "dividendDigits";
                                 if (val === "" || isNaN(Number(val)) ||
-                                    (block.type === "multiplication" && block.constraints.multiplicandDigits === -1) ||
+                                    ((block.type === "multiplication" || block.type === "vedic_multiplication_level4" || block.type === "vedic_multiply_by_111_999_level4") && block.constraints.multiplicandDigits === -1) ||
                                     (block.type === "division" && block.constraints.dividendDigits === -1)) {
-                                  setFieldError(index, fieldName, `${block.type === "multiplication" ? "Multiplicand Digits" : "Dividend Digits"} is required`);
-                                  const defaultVal = 2;
-                                  if (block.type === "multiplication") {
+                                  setFieldError(index, fieldName, `${(block.type === "multiplication" || block.type === "vedic_multiplication_level4" || block.type === "vedic_multiply_by_111_999_level4") ? "Multiplicand Digits" : "Dividend Digits"} is required`);
+                                  const defaultVal = block.type === "vedic_multiplication_level4" ? 3 : block.type === "vedic_multiply_by_111_999_level4" ? 3 : 2;
+                                  if (block.type === "multiplication" || block.type === "vedic_multiplication_level4" || block.type === "vedic_multiply_by_111_999_level4") {
                                     updateBlock(index, {
                                       constraints: { ...block.constraints, multiplicandDigits: defaultVal },
                                     });
@@ -1394,35 +2122,35 @@ export default function PaperCreate() {
                                 }
                               }}
                               className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 transition-all outline-none bg-white ${
-                                getFieldError(index, block.type === "multiplication" ? "multiplicandDigits" : "dividendDigits")
+                                getFieldError(index, (block.type === "multiplication" || block.type === "vedic_multiplication_level4" || block.type === "vedic_multiply_by_111_999_level4") ? "multiplicandDigits" : "dividendDigits")
                                   ? "border-red-300 focus:border-red-500 focus:ring-red-200"
                                   : "border-gray-200 focus:border-blue-500 focus:ring-blue-200"
                               }`}
                             />
-                            {getFieldError(index, block.type === "multiplication" ? "multiplicandDigits" : "dividendDigits") && (
-                              <p className="mt-1 text-sm text-red-600">{getFieldError(index, block.type === "multiplication" ? "multiplicandDigits" : "dividendDigits")}</p>
+                            {getFieldError(index, (block.type === "multiplication" || block.type === "vedic_multiplication_level4" || block.type === "vedic_multiply_by_111_999_level4") ? "multiplicandDigits" : "dividendDigits") && (
+                              <p className="mt-1 text-sm text-red-600">{getFieldError(index, (block.type === "multiplication" || block.type === "vedic_multiplication_level4" || block.type === "vedic_multiply_by_111_999_level4") ? "multiplicandDigits" : "dividendDigits")}</p>
                             )}
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                              {block.type === "multiplication" ? "Multiplier Digits (1-20)" : "Divisor Digits (1-20)"}
+                              {(block.type === "multiplication" || block.type === "vedic_multiplication_level4" || block.type === "vedic_multiply_by_111_999_level4") ? "Multiplier Digits (1-20)" : "Divisor Digits (1-20)"}
                             </label>
                             <input
                               type="text"
                               value={
-                                block.type === "multiplication"
-                                  ? block.constraints.multiplierDigits === -1 ? "" : String(block.constraints.multiplierDigits ?? 1)
+                                (block.type === "multiplication" || block.type === "vedic_multiplication_level4" || block.type === "vedic_multiply_by_111_999_level4")
+                                  ? block.constraints.multiplierDigits === -1 ? "" : String(block.constraints.multiplierDigits ?? (block.type === "vedic_multiplication_level4" ? 2 : block.type === "vedic_multiply_by_111_999_level4" ? 4 : 1))
                                   : block.constraints.divisorDigits === -1 ? "" : String(block.constraints.divisorDigits ?? 1)
                               }
                               onChange={(e) => {
                                 const val = e.target.value;
-                                const fieldName = block.type === "multiplication" ? "multiplierDigits" : "divisorDigits";
-                                const fieldLabel = block.type === "multiplication" ? "Multiplier Digits" : "Divisor Digits";
+                                const fieldName = (block.type === "multiplication" || block.type === "vedic_multiplication_level4" || block.type === "vedic_multiply_by_111_999_level4") ? "multiplierDigits" : "divisorDigits";
+                                const fieldLabel = (block.type === "multiplication" || block.type === "vedic_multiplication_level4" || block.type === "vedic_multiply_by_111_999_level4") ? "Multiplier Digits" : "Divisor Digits";
                                 
                                 if (val === "" || /^\d+$/.test(val)) {
                                   if (val === "") {
                                     setFieldError(index, fieldName, null);
-                                    if (block.type === "multiplication") {
+                                    if (block.type === "multiplication" || block.type === "vedic_multiplication_level4" || block.type === "vedic_multiply_by_111_999_level4") {
                                       updateBlock(index, {
                                         constraints: { ...block.constraints, multiplierDigits: -1 as any },
                                       });
@@ -1433,7 +2161,7 @@ export default function PaperCreate() {
                                     }
                                   } else {
                                     const numVal = parseInt(val);
-                                    if (block.type === "multiplication") {
+                                    if (block.type === "multiplication" || block.type === "vedic_multiplication_level4" || block.type === "vedic_multiply_by_111_999_level4") {
                                       updateBlock(index, {
                                         constraints: { ...block.constraints, multiplierDigits: numVal },
                                       });
@@ -1455,13 +2183,13 @@ export default function PaperCreate() {
                               }}
                               onBlur={(e) => {
                                 const val = e.target.value;
-                                const fieldName = block.type === "multiplication" ? "multiplierDigits" : "divisorDigits";
+                                const fieldName = (block.type === "multiplication" || block.type === "vedic_multiplication_level4" || block.type === "vedic_multiply_by_111_999_level4") ? "multiplierDigits" : "divisorDigits";
                                 if (val === "" || isNaN(Number(val)) ||
-                                    (block.type === "multiplication" && block.constraints.multiplierDigits === -1) ||
+                                    ((block.type === "multiplication" || block.type === "vedic_multiplication_level4" || block.type === "vedic_multiply_by_111_999_level4") && block.constraints.multiplierDigits === -1) ||
                                     (block.type === "division" && block.constraints.divisorDigits === -1)) {
-                                  setFieldError(index, fieldName, `${block.type === "multiplication" ? "Multiplier Digits" : "Divisor Digits"} is required`);
-                                  const defaultVal = 1;
-                                  if (block.type === "multiplication") {
+                                  setFieldError(index, fieldName, `${(block.type === "multiplication" || block.type === "vedic_multiplication_level4" || block.type === "vedic_multiply_by_111_999_level4") ? "Multiplier Digits" : "Divisor Digits"} is required`);
+                                  const defaultVal = block.type === "vedic_multiplication_level4" ? 2 : block.type === "vedic_multiply_by_111_999_level4" ? 4 : 1;
+                                  if (block.type === "multiplication" || block.type === "vedic_multiplication_level4" || block.type === "vedic_multiply_by_111_999_level4") {
                                     updateBlock(index, {
                                       constraints: { ...block.constraints, multiplierDigits: defaultVal },
                                     });
@@ -1483,13 +2211,13 @@ export default function PaperCreate() {
                                 }
                               }}
                               className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 transition-all outline-none bg-white ${
-                                getFieldError(index, block.type === "multiplication" ? "multiplierDigits" : "divisorDigits")
+                                getFieldError(index, (block.type === "multiplication" || block.type === "vedic_multiplication_level4" || block.type === "vedic_multiply_by_111_999_level4") ? "multiplierDigits" : "divisorDigits")
                                   ? "border-red-300 focus:border-red-500 focus:ring-red-200"
                                   : "border-gray-200 focus:border-blue-500 focus:ring-blue-200"
                               }`}
                             />
-                            {getFieldError(index, block.type === "multiplication" ? "multiplierDigits" : "divisorDigits") && (
-                              <p className="mt-1 text-sm text-red-600">{getFieldError(index, block.type === "multiplication" ? "multiplierDigits" : "divisorDigits")}</p>
+                            {getFieldError(index, (block.type === "multiplication" || block.type === "vedic_multiplication_level4" || block.type === "vedic_multiply_by_111_999_level4") ? "multiplierDigits" : "divisorDigits") && (
+                              <p className="mt-1 text-sm text-red-600">{getFieldError(index, (block.type === "multiplication" || block.type === "vedic_multiplication_level4" || block.type === "vedic_multiply_by_111_999_level4") ? "multiplierDigits" : "divisorDigits")}</p>
                             )}
                           </div>
                         </>
@@ -2441,6 +3169,404 @@ export default function PaperCreate() {
                         </div>
                       )}
 
+                      {/* Vedic Maths Level 2 Constraints */}
+                      {block.type === "vedic_fun_with_9" && (
+                        <>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Digits (1-10, optional)</label>
+                            <input
+                              type="text"
+                              value={block.constraints.digits === undefined || block.constraints.digits === -1 ? "" : String(block.constraints.digits)}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === "" || /^\d+$/.test(val)) {
+                                  if (val === "") {
+                                    updateBlock(index, { constraints: { ...block.constraints, digits: undefined } });
+                                  } else {
+                                    const numVal = parseInt(val);
+                                    updateBlock(index, { constraints: { ...block.constraints, digits: numVal } });
+                                  }
+                                }
+                              }}
+                              className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Case</label>
+                            <select
+                              value={block.constraints.funWith9Case || "mix"}
+                              onChange={(e) => {
+                                updateBlock(index, { constraints: { ...block.constraints, funWith9Case: e.target.value as any } });
+                              }}
+                              className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white"
+                            >
+                              <option value="equal">Equal</option>
+                              <option value="less_than">Less Than</option>
+                              <option value="greater_than">Greater Than</option>
+                              <option value="mix">Mix</option>
+                            </select>
+                          </div>
+                        </>
+                      )}
+
+                      {(block.type === "vedic_multiply_by_1001" || block.type === "vedic_multiply_by_5_25_125" || 
+                        block.type === "vedic_divide_by_5_25_125" || block.type === "vedic_multiply_by_5_50_500" || 
+                        block.type === "vedic_divide_by_5_50_500" || block.type === "vedic_divide_with_remainder" || 
+                        block.type === "vedic_divide_by_7" || block.type === "vedic_duplex" || 
+                        block.type === "vedic_squares_duplex") && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Digits (1-10, optional)</label>
+                          <input
+                            type="text"
+                            value={block.constraints.digits === undefined || block.constraints.digits === -1 ? "" : String(block.constraints.digits)}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === "" || /^\d+$/.test(val)) {
+                                if (val === "") {
+                                  updateBlock(index, { constraints: { ...block.constraints, digits: undefined } });
+                                } else {
+                                  const numVal = parseInt(val);
+                                  updateBlock(index, { constraints: { ...block.constraints, digits: numVal } });
+                                }
+                              }
+                            }}
+                            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white"
+                          />
+                        </div>
+                      )}
+
+                      {block.type === "vedic_subtraction_powers_of_10" && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Power of 10 (2-6, optional)</label>
+                          <input
+                            type="text"
+                            value={block.constraints.powerOf10 === undefined ? "" : String(block.constraints.powerOf10)}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === "" || /^\d+$/.test(val)) {
+                                if (val === "") {
+                                  updateBlock(index, { constraints: { ...block.constraints, powerOf10: undefined } });
+                                } else {
+                                  const numVal = parseInt(val);
+                                  if (numVal >= 2 && numVal <= 6) {
+                                    updateBlock(index, { constraints: { ...block.constraints, powerOf10: numVal } });
+                                  }
+                                }
+                              }
+                            }}
+                            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white"
+                          />
+                        </div>
+                      )}
+
+                      {(block.type === "vedic_special_products_cross_multiply" || block.type === "vedic_special_products_cross_base") && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Base (100, 1000, etc, optional)</label>
+                          <input
+                            type="text"
+                            value={block.constraints.base === undefined ? "" : String(block.constraints.base)}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === "" || /^\d+$/.test(val)) {
+                                if (val === "") {
+                                  updateBlock(index, { constraints: { ...block.constraints, base: undefined } });
+                                } else {
+                                  const numVal = parseInt(val);
+                                  if (numVal > 0) {
+                                    updateBlock(index, { constraints: { ...block.constraints, base: numVal } });
+                                  }
+                                }
+                              }
+                            }}
+                            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white"
+                          />
+                        </div>
+                      )}
+
+                      {block.type === "vedic_divide_by_9s_repetition" && (
+                        <>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Digits (1-10, optional)</label>
+                            <input
+                              type="text"
+                              value={block.constraints.digits === undefined || block.constraints.digits === -1 ? "" : String(block.constraints.digits)}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === "" || /^\d+$/.test(val)) {
+                                  if (val === "") {
+                                    updateBlock(index, { constraints: { ...block.constraints, digits: undefined } });
+                                  } else {
+                                    const numVal = parseInt(val);
+                                    updateBlock(index, { constraints: { ...block.constraints, digits: numVal } });
+                                  }
+                                }
+                              }}
+                              className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Case</label>
+                            <select
+                              value={block.constraints.divideBy9sCase || "mix"}
+                              onChange={(e) => {
+                                updateBlock(index, { constraints: { ...block.constraints, divideBy9sCase: e.target.value as any } });
+                              }}
+                              className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white"
+                            >
+                              <option value="equal">Equal</option>
+                              <option value="less_than">Less Than</option>
+                              <option value="mix">Mix</option>
+                            </select>
+                          </div>
+                        </>
+                      )}
+
+                      {block.type === "vedic_divide_by_11s_repetition" && (
+                        <>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Digits (1-10, optional)</label>
+                            <input
+                              type="text"
+                              value={block.constraints.digits === undefined || block.constraints.digits === -1 ? "" : String(block.constraints.digits)}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === "" || /^\d+$/.test(val)) {
+                                  if (val === "") {
+                                    updateBlock(index, { constraints: { ...block.constraints, digits: undefined } });
+                                  } else {
+                                    const numVal = parseInt(val);
+                                    updateBlock(index, { constraints: { ...block.constraints, digits: numVal } });
+                                  }
+                                }
+                              }}
+                              className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Case</label>
+                            <select
+                              value={block.constraints.divideBy11sCase || "mix"}
+                              onChange={(e) => {
+                                updateBlock(index, { constraints: { ...block.constraints, divideBy11sCase: e.target.value as any } });
+                              }}
+                              className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white"
+                            >
+                              <option value="equal">Equal</option>
+                              <option value="less_than">Less Than</option>
+                              <option value="mix">Mix</option>
+                            </select>
+                          </div>
+                        </>
+                      )}
+
+                      {block.type === "vedic_dropping_10_method" && (
+                        <>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Digits (1-5)</label>
+                            <input
+                              type="text"
+                              value={block.constraints.digits === -1 ? "" : String(block.constraints.digits ?? 2)}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === "" || /^\d+$/.test(val)) {
+                                  if (val === "") {
+                                    setFieldError(index, "digits", null);
+                                    updateBlock(index, { constraints: { ...block.constraints, digits: -1 as any } });
+                                  } else {
+                                    const numVal = parseInt(val);
+                                    updateBlock(index, { constraints: { ...block.constraints, digits: numVal } });
+                                    if (numVal < 1) {
+                                      setFieldError(index, "digits", "Minimum value for Digits is 1");
+                                    } else if (numVal > 5) {
+                                      setFieldError(index, "digits", "Maximum value for Digits is 5");
+                                    } else {
+                                      setFieldError(index, "digits", null);
+                                    }
+                                  }
+                                }
+                              }}
+                              onBlur={(e) => {
+                                const val = e.target.value;
+                                if (val === "" || isNaN(Number(val)) || block.constraints.digits === -1) {
+                                  setFieldError(index, "digits", "Digits is required");
+                                  updateBlock(index, { constraints: { ...block.constraints, digits: 2 } });
+                                } else {
+                                  const numVal = parseInt(val) || 2;
+                                  if (numVal < 1 || numVal > 5) {
+                                    updateBlock(index, { constraints: { ...block.constraints, digits: Math.max(1, Math.min(5, numVal)) } });
+                                  }
+                                }
+                              }}
+                              className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 transition-all outline-none bg-white ${
+                                getFieldError(index, "digits")
+                                  ? "border-red-300 focus:border-red-500 focus:ring-red-200"
+                                  : "border-gray-200 focus:border-blue-500 focus:ring-blue-200"
+                              }`}
+                            />
+                            {getFieldError(index, "digits") && (
+                              <p className="mt-1 text-sm text-red-600">{getFieldError(index, "digits")}</p>
+                            )}
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Rows (2-30)</label>
+                            <input
+                              type="text"
+                              value={block.constraints.rows === -1 ? "" : String(block.constraints.rows ?? 3)}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === "" || /^\d+$/.test(val)) {
+                                  if (val === "") {
+                                    setFieldError(index, "rows", null);
+                                    updateBlock(index, { constraints: { ...block.constraints, rows: -1 as any } });
+                                  } else {
+                                    const numVal = parseInt(val);
+                                    updateBlock(index, { constraints: { ...block.constraints, rows: numVal } });
+                                    if (numVal < 2) {
+                                      setFieldError(index, "rows", "Minimum value for Rows is 2");
+                                    } else if (numVal > 30) {
+                                      setFieldError(index, "rows", "Maximum value for Rows is 30");
+                                    } else {
+                                      setFieldError(index, "rows", null);
+                                    }
+                                  }
+                                }
+                              }}
+                              onBlur={(e) => {
+                                const val = e.target.value;
+                                if (val === "" || isNaN(Number(val)) || block.constraints.rows === -1) {
+                                  setFieldError(index, "rows", "Rows is required");
+                                  updateBlock(index, { constraints: { ...block.constraints, rows: 3 } });
+                                } else {
+                                  const numVal = parseInt(val) || 3;
+                                  if (numVal < 2 || numVal > 30) {
+                                    updateBlock(index, { constraints: { ...block.constraints, rows: Math.max(2, Math.min(30, numVal)) } });
+                                  }
+                                }
+                              }}
+                              className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 transition-all outline-none bg-white ${
+                                getFieldError(index, "rows")
+                                  ? "border-red-300 focus:border-red-500 focus:ring-red-200"
+                                  : "border-gray-200 focus:border-blue-500 focus:ring-blue-200"
+                              }`}
+                            />
+                            {getFieldError(index, "rows") && (
+                              <p className="mt-1 text-sm text-red-600">{getFieldError(index, "rows")}</p>
+                            )}
+                          </div>
+                        </>
+                      )}
+
+                      {/* Vedic Maths Level 3 Constraints */}
+                      {(block.type === "vedic_multiply_by_111_999" || block.type === "vedic_multiply_by_102_109" || 
+                        block.type === "vedic_multiply_by_112_119" || block.type === "vedic_multiply_by_10001" ||
+                        block.type === "vedic_squares_level3" || block.type === "vedic_percentage_level3" ||
+                        block.type === "vedic_squares_addition" || block.type === "vedic_squares_subtraction" ||
+                        block.type === "vedic_squares_large" || block.type === "vedic_duplex_level3") && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Digits (1-10, optional)</label>
+                          <input
+                            type="text"
+                            value={block.constraints.digits === undefined || block.constraints.digits === -1 ? "" : String(block.constraints.digits)}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === "" || /^\d+$/.test(val)) {
+                                if (val === "") {
+                                  updateBlock(index, { constraints: { ...block.constraints, digits: undefined } });
+                                } else {
+                                  const numVal = parseInt(val);
+                                  updateBlock(index, { constraints: { ...block.constraints, digits: numVal } });
+                                }
+                              }
+                            }}
+                            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white"
+                          />
+                        </div>
+                      )}
+
+                      {block.type === "vedic_multiplication" && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Case</label>
+                          <select
+                            value={block.constraints.multiplicationCase || "mix"}
+                            onChange={(e) => {
+                              updateBlock(index, { constraints: { ...block.constraints, multiplicationCase: e.target.value as any } });
+                            }}
+                            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white"
+                          >
+                            <option value="2x2">2×2</option>
+                            <option value="3x2">3×2</option>
+                            <option value="4x2">4×2</option>
+                            <option value="3x3">3×3</option>
+                            <option value="4x3">4×3</option>
+                            <option value="4x4">4×4</option>
+                            <option value="mix">Mix</option>
+                          </select>
+                        </div>
+                      )}
+
+                      {(block.type === "vedic_fraction_addition" || block.type === "vedic_fraction_subtraction") && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Case</label>
+                          <select
+                            value={block.constraints.fractionCase || "mix"}
+                            onChange={(e) => {
+                              updateBlock(index, { constraints: { ...block.constraints, fractionCase: e.target.value as any } });
+                            }}
+                            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white"
+                          >
+                            <option value="direct">Direct</option>
+                            <option value="different_denominator">Different Denominator</option>
+                            <option value="whole">Whole</option>
+                            <option value="mix">Mix</option>
+                          </select>
+                        </div>
+                      )}
+
+                      {block.type === "vedic_check_divisibility" && (
+                        <>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Digits (1-10, optional)</label>
+                            <input
+                              type="text"
+                              value={block.constraints.digits === undefined || block.constraints.digits === -1 ? "" : String(block.constraints.digits)}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === "" || /^\d+$/.test(val)) {
+                                  if (val === "") {
+                                    updateBlock(index, { constraints: { ...block.constraints, digits: undefined } });
+                                  } else {
+                                    const numVal = parseInt(val);
+                                    updateBlock(index, { constraints: { ...block.constraints, digits: numVal } });
+                                  }
+                                }
+                              }}
+                              className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Divisor (2,3,4,5,6,8,9,10, optional)</label>
+                            <select
+                              value={block.constraints.divisorCheck || ""}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                updateBlock(index, { constraints: { ...block.constraints, divisorCheck: val === "" ? undefined : parseInt(val) } });
+                              }}
+                              className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white"
+                            >
+                              <option value="">Random</option>
+                              <option value="2">2</option>
+                              <option value="3">3</option>
+                              <option value="4">4</option>
+                              <option value="5">5</option>
+                              <option value="6">6</option>
+                              <option value="8">8</option>
+                              <option value="9">9</option>
+                              <option value="10">10</option>
+                            </select>
+                          </div>
+                        </>
+                      )}
+
                       {(block.type === "lcm" || block.type === "gcd") && (
                         <>
                           <div>
@@ -2565,6 +3691,668 @@ export default function PaperCreate() {
                           </div>
                         </>
                       )}
+
+                      {/* Vedic Maths Level 4 Constraints */}
+                      {(block.type === "vedic_fun_with_5_level4" || block.type === "vedic_fun_with_10_level4") && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Case</label>
+                          <select
+                            value={block.constraints.funWith5Case || block.constraints.funWith10Case || "mix"}
+                            onChange={(e) => {
+                              if (block.type === "vedic_fun_with_5_level4") {
+                                updateBlock(index, { constraints: { ...block.constraints, funWith5Case: e.target.value as any } });
+                              } else {
+                                updateBlock(index, { constraints: { ...block.constraints, funWith10Case: e.target.value as any } });
+                              }
+                            }}
+                            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white"
+                          >
+                            <option value="decimal">Decimal</option>
+                            <option value="triple">Triple</option>
+                            <option value="mix">Mix</option>
+                          </select>
+                        </div>
+                      )}
+
+                      {(block.type === "vedic_hcf" || block.type === "vedic_lcm_level4") && (
+                        <>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              First Number Digits (1-20)
+                            </label>
+                            <input
+                              type="text"
+                              value={
+                                block.constraints.multiplicandDigits === -1 ? "" : String(block.constraints.multiplicandDigits ?? 2)
+                              }
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === "" || /^\d+$/.test(val)) {
+                                  if (val === "") {
+                                    setFieldError(index, "multiplicandDigits", null);
+                                    updateBlock(index, {
+                                      constraints: { ...block.constraints, multiplicandDigits: -1 as any },
+                                    });
+                                  } else {
+                                    const numVal = parseInt(val);
+                                    updateBlock(index, {
+                                      constraints: { ...block.constraints, multiplicandDigits: numVal },
+                                    });
+                                    if (numVal < 1) {
+                                      setFieldError(index, "multiplicandDigits", "Minimum value for First Number Digits is 1");
+                                    } else if (numVal > 20) {
+                                      setFieldError(index, "multiplicandDigits", "Maximum value for First Number Digits is 20");
+                                    } else {
+                                      setFieldError(index, "multiplicandDigits", null);
+                                    }
+                                  }
+                                }
+                              }}
+                              onBlur={(e) => {
+                                const val = e.target.value;
+                                if (val === "" || isNaN(Number(val)) || block.constraints.multiplicandDigits === -1) {
+                                  setFieldError(index, "multiplicandDigits", "First Number Digits is required");
+                                  updateBlock(index, {
+                                    constraints: { ...block.constraints, multiplicandDigits: 2 },
+                                  });
+                                } else {
+                                  const numVal = parseInt(val) || 2;
+                                  if (numVal < 1 || numVal > 20) {
+                                    updateBlock(index, {
+                                      constraints: { ...block.constraints, multiplicandDigits: Math.max(1, Math.min(20, numVal)) },
+                                    });
+                                  }
+                                }
+                              }}
+                              className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 transition-all outline-none bg-white ${
+                                getFieldError(index, "multiplicandDigits")
+                                  ? "border-red-300 focus:border-red-500 focus:ring-red-200"
+                                  : "border-gray-200 focus:border-blue-500 focus:ring-blue-200"
+                              }`}
+                            />
+                            {getFieldError(index, "multiplicandDigits") && (
+                              <p className="mt-1 text-sm text-red-600">{getFieldError(index, "multiplicandDigits")}</p>
+                            )}
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Second Number Digits (1-20)
+                            </label>
+                            <input
+                              type="text"
+                              value={
+                                block.constraints.multiplierDigits === -1 ? "" : String(block.constraints.multiplierDigits ?? 2)
+                              }
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === "" || /^\d+$/.test(val)) {
+                                  if (val === "") {
+                                    setFieldError(index, "multiplierDigits", null);
+                                    updateBlock(index, {
+                                      constraints: { ...block.constraints, multiplierDigits: -1 as any },
+                                    });
+                                  } else {
+                                    const numVal = parseInt(val);
+                                    updateBlock(index, {
+                                      constraints: { ...block.constraints, multiplierDigits: numVal },
+                                    });
+                                    if (numVal < 1) {
+                                      setFieldError(index, "multiplierDigits", "Minimum value for Second Number Digits is 1");
+                                    } else if (numVal > 20) {
+                                      setFieldError(index, "multiplierDigits", "Maximum value for Second Number Digits is 20");
+                                    } else {
+                                      setFieldError(index, "multiplierDigits", null);
+                                    }
+                                  }
+                                }
+                              }}
+                              onBlur={(e) => {
+                                const val = e.target.value;
+                                if (val === "" || isNaN(Number(val)) || block.constraints.multiplierDigits === -1) {
+                                  setFieldError(index, "multiplierDigits", "Second Number Digits is required");
+                                  updateBlock(index, {
+                                    constraints: { ...block.constraints, multiplierDigits: 2 },
+                                  });
+                                } else {
+                                  const numVal = parseInt(val) || 2;
+                                  if (numVal < 1 || numVal > 20) {
+                                    updateBlock(index, {
+                                      constraints: { ...block.constraints, multiplierDigits: Math.max(1, Math.min(20, numVal)) },
+                                    });
+                                  }
+                                }
+                              }}
+                              className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 transition-all outline-none bg-white ${
+                                getFieldError(index, "multiplierDigits")
+                                  ? "border-red-300 focus:border-red-500 focus:ring-red-200"
+                                  : "border-gray-200 focus:border-blue-500 focus:ring-blue-200"
+                              }`}
+                            />
+                            {getFieldError(index, "multiplierDigits") && (
+                              <p className="mt-1 text-sm text-red-600">{getFieldError(index, "multiplierDigits")}</p>
+                            )}
+                          </div>
+                        </>
+                      )}
+
+                      {block.type === "vedic_check_divisibility_level4" && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Case</label>
+                          <select
+                            value={block.constraints.divisibilityCase || "random"}
+                            onChange={(e) => {
+                              updateBlock(index, { constraints: { ...block.constraints, divisibilityCase: e.target.value as any } });
+                            }}
+                            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white"
+                          >
+                            <option value="by_7">By 7</option>
+                            <option value="by_11">By 11</option>
+                            <option value="random">Random</option>
+                          </select>
+                        </div>
+                      )}
+
+                      {(block.type === "vedic_division_without_remainder" || block.type === "vedic_division_with_remainder" || block.type === "vedic_divide_by_11_99") && (
+                        <>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              {block.type === "vedic_divide_by_11_99" ? "Dividend Digits (1-20)" : "Dividend Digits (1-20)"}
+                            </label>
+                            <input
+                              type="text"
+                              value={
+                                block.constraints.dividendDigits === -1 ? "" : String(block.constraints.dividendDigits ?? (block.type === "vedic_division_with_remainder" ? 3 : block.type === "vedic_divide_by_11_99" ? 4 : 2))
+                              }
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === "" || /^\d+$/.test(val)) {
+                                  if (val === "") {
+                                    setFieldError(index, "dividendDigits", null);
+                                    updateBlock(index, {
+                                      constraints: { ...block.constraints, dividendDigits: -1 as any },
+                                    });
+                                  } else {
+                                    const numVal = parseInt(val);
+                                    updateBlock(index, {
+                                      constraints: { ...block.constraints, dividendDigits: numVal },
+                                    });
+                                    if (numVal < 1) {
+                                      setFieldError(index, "dividendDigits", "Minimum value for Dividend Digits is 1");
+                                    } else if (numVal > 20) {
+                                      setFieldError(index, "dividendDigits", "Maximum value for Dividend Digits is 20");
+                                    } else {
+                                      setFieldError(index, "dividendDigits", null);
+                                    }
+                                  }
+                                }
+                              }}
+                              onBlur={(e) => {
+                                const val = e.target.value;
+                                const defaultVal = block.type === "vedic_division_with_remainder" ? 3 : block.type === "vedic_divide_by_11_99" ? 4 : 2;
+                                if (val === "" || isNaN(Number(val)) || block.constraints.dividendDigits === -1) {
+                                  setFieldError(index, "dividendDigits", "Dividend Digits is required");
+                                  updateBlock(index, {
+                                    constraints: { ...block.constraints, dividendDigits: defaultVal },
+                                  });
+                                } else {
+                                  const numVal = parseInt(val) || defaultVal;
+                                  if (numVal < 1 || numVal > 20) {
+                                    updateBlock(index, {
+                                      constraints: { ...block.constraints, dividendDigits: Math.max(1, Math.min(20, numVal)) },
+                                    });
+                                  }
+                                }
+                              }}
+                              className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 transition-all outline-none bg-white ${
+                                getFieldError(index, "dividendDigits")
+                                  ? "border-red-300 focus:border-red-500 focus:ring-red-200"
+                                  : "border-gray-200 focus:border-blue-500 focus:ring-blue-200"
+                              }`}
+                            />
+                            {getFieldError(index, "dividendDigits") && (
+                              <p className="mt-1 text-sm text-red-600">{getFieldError(index, "dividendDigits")}</p>
+                            )}
+                          </div>
+                          {(block.type === "vedic_division_without_remainder" || block.type === "vedic_division_with_remainder") && (
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Divisor Digits (1-20)</label>
+                              <input
+                                type="text"
+                                value={
+                                  block.constraints.divisorDigits === -1 ? "" : String(block.constraints.divisorDigits ?? 1)
+                                }
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (val === "" || /^\d+$/.test(val)) {
+                                    if (val === "") {
+                                      setFieldError(index, "divisorDigits", null);
+                                      updateBlock(index, {
+                                        constraints: { ...block.constraints, divisorDigits: -1 as any },
+                                      });
+                                    } else {
+                                      const numVal = parseInt(val);
+                                      updateBlock(index, {
+                                        constraints: { ...block.constraints, divisorDigits: numVal },
+                                      });
+                                      if (numVal < 1) {
+                                        setFieldError(index, "divisorDigits", "Minimum value for Divisor Digits is 1");
+                                      } else if (numVal > 20) {
+                                        setFieldError(index, "divisorDigits", "Maximum value for Divisor Digits is 20");
+                                      } else {
+                                        setFieldError(index, "divisorDigits", null);
+                                      }
+                                    }
+                                  }
+                                }}
+                                onBlur={(e) => {
+                                  const val = e.target.value;
+                                  if (val === "" || isNaN(Number(val)) || block.constraints.divisorDigits === -1) {
+                                    setFieldError(index, "divisorDigits", "Divisor Digits is required");
+                                    updateBlock(index, {
+                                      constraints: { ...block.constraints, divisorDigits: 1 },
+                                    });
+                                  } else {
+                                    const numVal = parseInt(val) || 1;
+                                    if (numVal < 1 || numVal > 20) {
+                                      updateBlock(index, {
+                                        constraints: { ...block.constraints, divisorDigits: Math.max(1, Math.min(20, numVal)) },
+                                      });
+                                    }
+                                  }
+                                }}
+                                className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 transition-all outline-none bg-white ${
+                                  getFieldError(index, "divisorDigits")
+                                    ? "border-red-300 focus:border-red-500 focus:ring-red-200"
+                                    : "border-gray-200 focus:border-blue-500 focus:ring-blue-200"
+                                }`}
+                              />
+                              {getFieldError(index, "divisorDigits") && (
+                                <p className="mt-1 text-sm text-red-600">{getFieldError(index, "divisorDigits")}</p>
+                              )}
+                            </div>
+                          )}
+                        </>
+                      )}
+
+                      {(block.type === "vedic_division_9_8_7_6" || block.type === "vedic_division_91_121") && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Case</label>
+                          <select
+                            value={block.constraints.division9_8_7_6Case || block.constraints.division91_121Case || "mix"}
+                            onChange={(e) => {
+                              if (block.type === "vedic_division_9_8_7_6") {
+                                updateBlock(index, { constraints: { ...block.constraints, division9_8_7_6Case: e.target.value as any } });
+                              } else {
+                                updateBlock(index, { constraints: { ...block.constraints, division91_121Case: e.target.value as any } });
+                              }
+                            }}
+                            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white"
+                          >
+                            {block.type === "vedic_division_9_8_7_6" ? (
+                              <>
+                                <option value="9">9</option>
+                                <option value="8">8</option>
+                                <option value="7">7</option>
+                                <option value="6">6</option>
+                                <option value="mix">Mix</option>
+                              </>
+                            ) : (
+                              <>
+                                <option value="91">91</option>
+                                <option value="121">121</option>
+                                <option value="mix">Mix</option>
+                              </>
+                            )}
+                          </select>
+                        </div>
+                      )}
+
+                      {block.type === "vedic_digital_sum" && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Digits (1-30)</label>
+                          <input
+                            type="text"
+                            value={block.constraints.digits === -1 ? "" : String(block.constraints.digits ?? 4)}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === "" || /^\d+$/.test(val)) {
+                                if (val === "") {
+                                  setFieldError(index, "digits", null);
+                                  updateBlock(index, { constraints: { ...block.constraints, digits: -1 as any } });
+                                } else {
+                                  const numVal = parseInt(val);
+                                  updateBlock(index, { constraints: { ...block.constraints, digits: numVal } });
+                                  if (numVal < 1) {
+                                    setFieldError(index, "digits", "Minimum value for Digits is 1");
+                                  } else if (numVal > 30) {
+                                    setFieldError(index, "digits", "Maximum value for Digits is 30");
+                                  } else {
+                                    setFieldError(index, "digits", null);
+                                  }
+                                }
+                              }
+                            }}
+                            onBlur={(e) => {
+                              const val = e.target.value;
+                              if (val === "" || isNaN(Number(val)) || block.constraints.digits === -1) {
+                                setFieldError(index, "digits", "Digits is required");
+                                updateBlock(index, { constraints: { ...block.constraints, digits: 4 } });
+                              } else {
+                                const numVal = parseInt(val) || 4;
+                                if (numVal < 1 || numVal > 30) {
+                                  updateBlock(index, { constraints: { ...block.constraints, digits: Math.max(1, Math.min(30, numVal)) } });
+                                }
+                              }
+                            }}
+                            className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 transition-all outline-none bg-white ${
+                              getFieldError(index, "digits")
+                                ? "border-red-300 focus:border-red-500 focus:ring-red-200"
+                                : "border-gray-200 focus:border-blue-500 focus:ring-blue-200"
+                            }`}
+                          />
+                          {getFieldError(index, "digits") && (
+                            <p className="mt-1 text-sm text-red-600">{getFieldError(index, "digits")}</p>
+                          )}
+                        </div>
+                      )}
+
+                      {block.type === "vedic_cube_root_level4" && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Cube Root Digits (4-10)</label>
+                          <input
+                            type="text"
+                            value={block.constraints.cubeRootDigits === -1 ? "" : String(block.constraints.cubeRootDigits ?? 5)}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === "" || /^\d+$/.test(val)) {
+                                if (val === "") {
+                                  setFieldError(index, "cubeRootDigits", null);
+                                  updateBlock(index, { constraints: { ...block.constraints, cubeRootDigits: -1 as any } });
+                                } else {
+                                  const numVal = parseInt(val);
+                                  updateBlock(index, { constraints: { ...block.constraints, cubeRootDigits: numVal } });
+                                  if (numVal < 4) {
+                                    setFieldError(index, "cubeRootDigits", "Minimum value for Cube Root Digits is 4");
+                                  } else if (numVal > 10) {
+                                    setFieldError(index, "cubeRootDigits", "Maximum value for Cube Root Digits is 10");
+                                  } else {
+                                    setFieldError(index, "cubeRootDigits", null);
+                                  }
+                                }
+                              }
+                            }}
+                            onBlur={(e) => {
+                              const val = e.target.value;
+                              if (val === "" || isNaN(Number(val)) || block.constraints.cubeRootDigits === -1) {
+                                setFieldError(index, "cubeRootDigits", "Cube Root Digits is required");
+                                updateBlock(index, { constraints: { ...block.constraints, cubeRootDigits: 5 } });
+                              } else {
+                                const numVal = parseInt(val) || 5;
+                                if (numVal < 4 || numVal > 10) {
+                                  updateBlock(index, { constraints: { ...block.constraints, cubeRootDigits: Math.max(4, Math.min(10, numVal)) } });
+                                }
+                              }
+                            }}
+                            className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 transition-all outline-none bg-white ${
+                              getFieldError(index, "cubeRootDigits")
+                                ? "border-red-300 focus:border-red-500 focus:ring-red-200"
+                                : "border-gray-200 focus:border-blue-500 focus:ring-blue-200"
+                            }`}
+                          />
+                          {getFieldError(index, "cubeRootDigits") && (
+                            <p className="mt-1 text-sm text-red-600">{getFieldError(index, "cubeRootDigits")}</p>
+                          )}
+                        </div>
+                      )}
+
+                      {block.type === "vedic_bodmas" && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Difficulty</label>
+                          <select
+                            value={block.constraints.bodmasDifficulty || "medium"}
+                            onChange={(e) => {
+                              updateBlock(index, { constraints: { ...block.constraints, bodmasDifficulty: e.target.value as any } });
+                            }}
+                            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white"
+                          >
+                            <option value="easy">Easy</option>
+                            <option value="medium">Medium</option>
+                            <option value="hard">Hard</option>
+                          </select>
+                        </div>
+                      )}
+
+                      {block.type === "vedic_square_root_level4" && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Root Digits (1-30)</label>
+                          <input
+                            type="text"
+                            value={block.constraints.rootDigits === -1 ? "" : String(block.constraints.rootDigits ?? 4)}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === "" || /^\d+$/.test(val)) {
+                                if (val === "") {
+                                  setFieldError(index, "rootDigits", null);
+                                  updateBlock(index, { constraints: { ...block.constraints, rootDigits: -1 as any } });
+                                } else {
+                                  const numVal = parseInt(val);
+                                  updateBlock(index, { constraints: { ...block.constraints, rootDigits: numVal } });
+                                  if (numVal < 1) {
+                                    setFieldError(index, "rootDigits", "Minimum value for Root Digits is 1");
+                                  } else if (numVal > 30) {
+                                    setFieldError(index, "rootDigits", "Maximum value for Root Digits is 30");
+                                  } else {
+                                    setFieldError(index, "rootDigits", null);
+                                  }
+                                }
+                              }
+                            }}
+                            onBlur={(e) => {
+                              const val = e.target.value;
+                              if (val === "" || isNaN(Number(val)) || block.constraints.rootDigits === -1) {
+                                setFieldError(index, "rootDigits", "Root Digits is required");
+                                updateBlock(index, { constraints: { ...block.constraints, rootDigits: 4 } });
+                              } else {
+                                const numVal = parseInt(val) || 4;
+                                if (numVal < 1 || numVal > 30) {
+                                  updateBlock(index, { constraints: { ...block.constraints, rootDigits: Math.max(1, Math.min(30, numVal)) } });
+                                }
+                              }
+                            }}
+                            className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 transition-all outline-none bg-white ${
+                              getFieldError(index, "rootDigits")
+                                ? "border-red-300 focus:border-red-500 focus:ring-red-200"
+                                : "border-gray-200 focus:border-blue-500 focus:ring-blue-200"
+                            }`}
+                          />
+                          {getFieldError(index, "rootDigits") && (
+                            <p className="mt-1 text-sm text-red-600">{getFieldError(index, "rootDigits")}</p>
+                          )}
+                        </div>
+                      )}
+
+                      {block.type === "vedic_percentage_level3" && (
+                        <>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Percentage Min (1-100)
+                            </label>
+                            <input
+                              type="text"
+                              value={
+                                block.constraints.percentageMin === undefined ? "" : String(block.constraints.percentageMin)
+                              }
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === "" || /^\d+$/.test(val)) {
+                                  if (val === "") {
+                                    setFieldError(index, "percentageMin", null);
+                                    updateBlock(index, {
+                                      constraints: { ...block.constraints, percentageMin: undefined },
+                                    });
+                                  } else {
+                                    const numVal = parseInt(val);
+                                    updateBlock(index, {
+                                      constraints: { ...block.constraints, percentageMin: numVal },
+                                    });
+                                    if (numVal < 1) {
+                                      setFieldError(index, "percentageMin", "Minimum value for Percentage Min is 1");
+                                    } else if (numVal > 100) {
+                                      setFieldError(index, "percentageMin", "Maximum value for Percentage Min is 100");
+                                    } else if (block.constraints.percentageMax !== undefined && numVal > block.constraints.percentageMax) {
+                                      setFieldError(index, "percentageMin", "Percentage Min cannot be greater than Percentage Max");
+                                    } else {
+                                      setFieldError(index, "percentageMin", null);
+                                    }
+                                  }
+                                }
+                              }}
+                              onBlur={(e) => {
+                                const val = e.target.value;
+                                if (val === "" || isNaN(Number(val))) {
+                                  setFieldError(index, "percentageMin", "Percentage Min is required");
+                                  updateBlock(index, {
+                                    constraints: { ...block.constraints, percentageMin: 1 },
+                                  });
+                                } else {
+                                  const numVal = parseInt(val) || 1;
+                                  if (numVal < 1 || numVal > 100 || (block.constraints.percentageMax !== undefined && numVal > block.constraints.percentageMax)) {
+                                    updateBlock(index, {
+                                      constraints: { ...block.constraints, percentageMin: Math.max(1, Math.min(100, numVal)) },
+                                    });
+                                  }
+                                }
+                              }}
+                              className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 transition-all outline-none bg-white ${
+                                getFieldError(index, "percentageMin") || (block.constraints.percentageMin !== undefined && block.constraints.percentageMax !== undefined && block.constraints.percentageMin > block.constraints.percentageMax)
+                                  ? "border-red-300 focus:border-red-500 focus:ring-red-200"
+                                  : "border-gray-200 focus:border-blue-500 focus:ring-blue-200"
+                              }`}
+                            />
+                            {getFieldError(index, "percentageMin") && (
+                              <p className="mt-1 text-sm text-red-600">{getFieldError(index, "percentageMin")}</p>
+                            )}
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Percentage Max (1-100)
+                            </label>
+                            <input
+                              type="text"
+                              value={
+                                block.constraints.percentageMax === undefined ? "" : String(block.constraints.percentageMax)
+                              }
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === "" || /^\d+$/.test(val)) {
+                                  if (val === "") {
+                                    setFieldError(index, "percentageMax", null);
+                                    updateBlock(index, {
+                                      constraints: { ...block.constraints, percentageMax: undefined },
+                                    });
+                                  } else {
+                                    const numVal = parseInt(val);
+                                    updateBlock(index, {
+                                      constraints: { ...block.constraints, percentageMax: numVal },
+                                    });
+                                    if (numVal < 1) {
+                                      setFieldError(index, "percentageMax", "Minimum value for Percentage Max is 1");
+                                    } else if (numVal > 100) {
+                                      setFieldError(index, "percentageMax", "Maximum value for Percentage Max is 100");
+                                    } else if (block.constraints.percentageMin !== undefined && numVal < block.constraints.percentageMin) {
+                                      setFieldError(index, "percentageMax", "Percentage Max cannot be less than Percentage Min");
+                                    } else {
+                                      setFieldError(index, "percentageMax", null);
+                                    }
+                                  }
+                                }
+                              }}
+                              onBlur={(e) => {
+                                const val = e.target.value;
+                                if (val === "" || isNaN(Number(val))) {
+                                  setFieldError(index, "percentageMax", "Percentage Max is required");
+                                  updateBlock(index, {
+                                    constraints: { ...block.constraints, percentageMax: 100 },
+                                  });
+                                } else {
+                                  const numVal = parseInt(val) || 100;
+                                  if (numVal < 1 || numVal > 100 || (block.constraints.percentageMin !== undefined && numVal < block.constraints.percentageMin)) {
+                                    updateBlock(index, {
+                                      constraints: { ...block.constraints, percentageMax: Math.max(1, Math.min(100, numVal)) },
+                                    });
+                                  }
+                                }
+                              }}
+                              className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 transition-all outline-none bg-white ${
+                                getFieldError(index, "percentageMax") || (block.constraints.percentageMin !== undefined && block.constraints.percentageMax !== undefined && block.constraints.percentageMin > block.constraints.percentageMax)
+                                  ? "border-red-300 focus:border-red-500 focus:ring-red-200"
+                                  : "border-gray-200 focus:border-blue-500 focus:ring-blue-200"
+                              }`}
+                            />
+                            {getFieldError(index, "percentageMax") && (
+                              <p className="mt-1 text-sm text-red-600">{getFieldError(index, "percentageMax")}</p>
+                            )}
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Number Digits (1-10)
+                            </label>
+                            <input
+                              type="text"
+                              value={
+                                block.constraints.numberDigits === undefined ? "" : String(block.constraints.numberDigits)
+                              }
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === "" || /^\d+$/.test(val)) {
+                                  if (val === "") {
+                                    setFieldError(index, "numberDigits", null);
+                                    updateBlock(index, {
+                                      constraints: { ...block.constraints, numberDigits: undefined },
+                                    });
+                                  } else {
+                                    const numVal = parseInt(val);
+                                    updateBlock(index, {
+                                      constraints: { ...block.constraints, numberDigits: numVal },
+                                    });
+                                    if (numVal < 1) {
+                                      setFieldError(index, "numberDigits", "Minimum value for Number Digits is 1");
+                                    } else if (numVal > 10) {
+                                      setFieldError(index, "numberDigits", "Maximum value for Number Digits is 10");
+                                    } else {
+                                      setFieldError(index, "numberDigits", null);
+                                    }
+                                  }
+                                }
+                              }}
+                              onBlur={(e) => {
+                                const val = e.target.value;
+                                if (val === "" || isNaN(Number(val))) {
+                                  setFieldError(index, "numberDigits", "Number Digits is required");
+                                  updateBlock(index, {
+                                    constraints: { ...block.constraints, numberDigits: 4 },
+                                  });
+                                } else {
+                                  const numVal = parseInt(val) || 4;
+                                  if (numVal < 1 || numVal > 10) {
+                                    updateBlock(index, {
+                                      constraints: { ...block.constraints, numberDigits: Math.max(1, Math.min(10, numVal)) },
+                                    });
+                                  }
+                                }
+                              }}
+                              className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 transition-all outline-none bg-white ${
+                                getFieldError(index, "numberDigits")
+                                  ? "border-red-300 focus:border-red-500 focus:ring-red-200"
+                                  : "border-gray-200 focus:border-blue-500 focus:ring-blue-200"
+                              }`}
+                            />
+                            {getFieldError(index, "numberDigits") && (
+                              <p className="mt-1 text-sm text-red-600">{getFieldError(index, "numberDigits")}</p>
+                            )}
+                          </div>
+                        </>
+                      )}
                     </div>
                     
                   </div>
@@ -2581,14 +4369,14 @@ export default function PaperCreate() {
                     </>
                   ) : (
                     <>
-                      <p className="text-gray-500 mb-4">No question blocks yet</p>
-                      <button
-                        onClick={addBlock}
-                        className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all"
-                      >
-                        <Plus className="w-5 h-5" />
-                        Add Your First Block
-                      </button>
+                  <p className="text-gray-500 mb-4">No question blocks yet</p>
+                  <button
+                    onClick={addBlock}
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all"
+                  >
+                    <Plus className="w-5 h-5" />
+                    Add Your First Block
+                  </button>
                     </>
                   )}
                 </div>
@@ -2742,7 +4530,7 @@ export default function PaperCreate() {
                 </h3>
                                 <div className="grid grid-cols-1 gap-2">
                   {block.questions.map((q) => (
-                    <MathQuestion key={q.id} question={q} showAnswer={showAnswers} />
+                    <MathQuestion key={q.id} question={q} showAnswer={showAnswers} smallHorizontalFont={!q.isVertical} />
                   ))}
                 </div>
               </div>
@@ -2784,7 +4572,7 @@ export default function PaperCreate() {
                                 {/* Serial number row */}
                                 <tr>
                                   {block.questions.map((q) => (
-                                    <td key={`sno-${q.id}`} className="p-1 align-top border border-gray-200 bg-white" style={{ width: '10%' }}>
+                                    <td key={`sno-${q.id}`} className="p-1 align-center border border-gray-200 bg-white text-center" style={{ width: '10%' }}>
                                       <span className="font-bold text-sm text-blue-700">{q.id}.</span>
                                     </td>
                                   ))}
@@ -2874,7 +4662,7 @@ export default function PaperCreate() {
                           // 1 column with multiple rows for horizontal questions (multiplication, etc.)
                           <div className="grid grid-cols-1 gap-2 max-w-md">
                             {block.questions.map((q) => (
-                              <MathQuestion key={q.id} question={q} showAnswer={showAnswers} />
+                              <MathQuestion key={q.id} question={q} showAnswer={showAnswers} smallHorizontalFont={!q.isVertical} />
                             ))}
                           </div>
                         )}
@@ -2886,6 +4674,13 @@ export default function PaperCreate() {
             })()}
 
             <div className="flex gap-3 pt-4">
+              <button
+                onClick={handleAttemptPaper}
+                className="flex-1 group flex items-center justify-center gap-2 px-4 py-4 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 text-sm"
+              >
+                <Play className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                Attempt Paper
+              </button>
               <button
                 onClick={() => downloadMutation.mutate({ withAnswers: false, answersOnly: false })}
                 disabled={downloadMutation.isPending}

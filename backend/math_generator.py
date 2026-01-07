@@ -1,6 +1,7 @@
 """Math question generation logic."""
 import random
 import math
+from math import lcm
 from typing import List, Optional, Callable
 from schemas import Question, Constraints, BlockConfig, GeneratedBlock, QuestionType
 
@@ -141,13 +142,47 @@ def generate_question(
         operator = "+"
         is_vertical = True
         # Generate all numbers with exact same digit count
+        # Use better randomization: vary the range distribution to avoid patterns
         operands = []
-        for _ in range(rows):
-            num = generate_num(digits)
+        min_val = 10 ** (digits - 1)
+        max_val = (10 ** digits) - 1
+        
+        # Use different distribution strategies to avoid patterns
+        # Mix uniform, weighted (toward middle), and weighted (toward edges) distributions
+        distribution_type = int(random_func() * 3)
+        
+        for i in range(rows):
+            if distribution_type == 0:
+                # Uniform distribution
+                num = generate_num(digits)
+            elif distribution_type == 1:
+                # Weighted toward middle values (more typical numbers)
+                # Use normal-like distribution approximated with multiple random calls
+                center = (min_val + max_val) // 2
+                spread = (max_val - min_val) // 4
+                offset = int((random_func() + random_func() - 1) * spread)
+                num = max(min_val, min(max_val, center + offset))
+            else:
+                # Weighted toward edges (include more edge cases)
+                edge_choice = random_func()
+                if edge_choice < 0.5:
+                    # Lower half
+                    num = int(random_func() * ((min_val + max_val) // 2 - min_val + 1)) + min_val
+                else:
+                    # Upper half
+                    num = int(random_func() * (max_val - (min_val + max_val) // 2 + 1)) + (min_val + max_val) // 2
+            
             # Ensure it has exactly the right number of digits
             while len(str(num)) != digits:
                 num = generate_num(digits)
             operands.append(num)
+        
+        # Shuffle operands to avoid ordering patterns
+        # Manual shuffle using random_func (Fisher-Yates algorithm)
+        for i in range(len(operands) - 1, 0, -1):
+            j = int(random_func() * (i + 1))
+            operands[i], operands[j] = operands[j], operands[i]
+        
         answer = float(sum(operands))
     
     elif question_type == "subtraction":
@@ -160,10 +195,23 @@ def generate_question(
         max_first = (10 ** digits) - 1
         min_first = 10 ** (digits - 1)
         
-        # Generate numbers to subtract first
+        # Generate numbers to subtract first with better randomization
         numbers_to_subtract = []
-        for _ in range(rows - 1):
-            num = generate_num(digits)
+        # Use varied distribution to avoid patterns
+        for i in range(rows - 1):
+            # Alternate between different generation strategies
+            if i % 3 == 0:
+                # Standard random
+                num = generate_num(digits)
+            elif i % 3 == 1:
+                # Weighted toward smaller numbers (more typical subtractions)
+                weighted_max = int((max_first - min_first) * 0.6) + min_first
+                num = int(random_func() * (weighted_max - min_first + 1)) + min_first
+            else:
+                # Weighted toward larger numbers (challenging subtractions)
+                weighted_min = int((max_first - min_first) * 0.4) + min_first
+                num = int(random_func() * (max_first - weighted_min + 1)) + weighted_min
+            
             # Ensure exact digit count
             while len(str(num)) != digits:
                 num = generate_num(digits)
@@ -230,21 +278,64 @@ def generate_question(
         max_val = (10 ** digits) - 1
         min_val = 10 ** (digits - 1)
         
-        # Generate all operands first
+        # Generate all operands first with better randomization
         operands = []
-        for _ in range(rows):
-            num = generate_num(digits)
+        # Use varied distribution strategies
+        distribution_cycle = int(random_func() * 3)
+        
+        for i in range(rows):
+            if distribution_cycle == 0:
+                # Standard uniform distribution
+                num = generate_num(digits)
+            elif distribution_cycle == 1:
+                # Weighted toward middle values
+                center = (min_val + max_val) // 2
+                spread = (max_val - min_val) // 3
+                offset = int((random_func() + random_func() - 1) * spread)
+                num = max(min_val, min(max_val, center + offset))
+            else:
+                # Mix of small and large (avoid middle-heavy patterns)
+                if i % 2 == 0:
+                    # Smaller numbers
+                    num = int(random_func() * ((min_val + max_val) // 2 - min_val + 1)) + min_val
+                else:
+                    # Larger numbers
+                    num = int(random_func() * (max_val - (min_val + max_val) // 2 + 1)) + (min_val + max_val) // 2
+            
             # Ensure exact digit count
             while len(str(num)) != digits:
                 num = generate_num(digits)
             operands.append(num)
         
-        # Randomly assign operators (+ or -) to each position after the first
+        # Better operator assignment: avoid patterns, ensure variety
         operators_list = []
+        # Track operator balance to avoid all + or all -
+        add_count = 0
+        sub_count = 0
+        target_balance = (rows - 1) / 2  # Aim for roughly balanced
+        
         for i in range(rows - 1):
-            # Randomly choose + or - (50/50 chance, but ensure some variety)
-            op = "+" if random_func() < 0.5 else "-"
+            # Use adaptive probability based on current balance
+            if add_count > target_balance + 1:
+                # Too many additions, favor subtraction
+                prob_add = 0.3
+            elif sub_count > target_balance + 1:
+                # Too many subtractions, favor addition
+                prob_add = 0.7
+            else:
+                # Balanced, use varied probability (not exactly 50/50 to avoid patterns)
+                # Use question_id to create variation
+                base_prob = 0.5
+                variation = (question_id % 5) / 20.0  # Vary between 0.45 and 0.55
+                prob_add = base_prob + variation - 0.1
+            
+            op = "+" if random_func() < prob_add else "-"
             operators_list.append(op)
+            
+            if op == "+":
+                add_count += 1
+            else:
+                sub_count += 1
         
         # Calculate answer by applying operations left to right
         answer = float(operands[0])
@@ -1320,6 +1411,1401 @@ def generate_question(
         operands = [table_num, multiplier]
         text = f"{table_num} × {multiplier} ="
     
+    # ========== VEDIC MATHS LEVEL 2 OPERATIONS ==========
+    elif question_type == "vedic_fun_with_9":
+        operator = "×"
+        is_vertical = False
+        digits = constraints.digits if constraints.digits is not None else 2
+        digits = max(1, min(10, digits))  # Limit to reasonable range
+        
+        # Get case: equal, less_than, greater_than, or mix
+        case = constraints.funWith9Case if constraints.funWith9Case else "mix"
+        if case == "mix":
+            # Randomly choose a case
+            case_choice = int(random_func() * 3)
+            if case_choice == 0:
+                case = "equal"
+            elif case_choice == 1:
+                case = "less_than"
+            else:
+                case = "greater_than"
+        
+        # Generate number with specified digits
+        num = generate_num(digits)
+        
+        # Generate multiplier based on case
+        if case == "equal":
+            # Equal digits of 9s: 84 × 99, 78634 × 99999
+            multiplier_9s = int("9" * digits)
+        elif case == "less_than":
+            # Less than: number × (digits + 1) digits of 9s: 345 × 9999, 22 × 999
+            multiplier_9s = int("9" * (digits + 1))
+        else:  # greater_than
+            # Greater than: number × (digits - 1) digits of 9s: 6043 × 999, 734987 × 99999
+            multiplier_9s = int("9" * max(1, digits - 1))
+        
+        answer = float(num * multiplier_9s)
+        operands = [num, multiplier_9s]
+        text = f"{num} × {multiplier_9s} ="
+    
+    elif question_type == "vedic_fun_with_5":
+        operator = "×"
+        is_vertical = False
+        # 2×2 multiplication: first digits same, second digits sum to 10
+        # e.g., 31 × 39 (3=3, 1+9=10), 95 × 95 (9=9, 5+5=10)
+        first_digit = int(random_func() * 9) + 1  # 1-9
+        second_digit1 = int(random_func() * 10)  # 0-9
+        second_digit2 = 10 - second_digit1  # Complement to 10
+        
+        num1 = first_digit * 10 + second_digit1
+        num2 = first_digit * 10 + second_digit2
+        
+        answer = float(num1 * num2)
+        operands = [num1, num2]
+        text = f"{num1} × {num2} ="
+    
+    elif question_type == "vedic_fun_with_10":
+        operator = "×"
+        is_vertical = False
+        # 2×2 multiplication: second digits same, first digits sum to 10
+        # e.g., 33 × 73 (3+7=10, 3=3), 98 × 18 (9+1=10, 8=8)
+        first_digit1 = int(random_func() * 9) + 1  # 1-9
+        first_digit2 = 10 - first_digit1  # Complement to 10
+        second_digit = int(random_func() * 10)  # 0-9
+        
+        num1 = first_digit1 * 10 + second_digit
+        num2 = first_digit2 * 10 + second_digit
+        
+        answer = float(num1 * num2)
+        operands = [num1, num2]
+        text = f"{num1} × {num2} ="
+    
+    elif question_type == "vedic_multiply_by_1001":
+        operator = "×"
+        is_vertical = False
+        digits = constraints.digits if constraints.digits is not None else 2
+        digits = max(1, min(10, digits))
+        
+        num = generate_num(digits)
+        answer = float(num * 1001)
+        operands = [num, 1001]
+        text = f"{num} × 1001 ="
+    
+    elif question_type == "vedic_multiply_by_5_25_125":
+        operator = "×"
+        is_vertical = False
+        digits = constraints.digits if constraints.digits is not None else 2
+        digits = max(1, min(10, digits))
+        
+        # Randomly choose 5, 25, or 125
+        multipliers = [5, 25, 125]
+        multiplier = multipliers[int(random_func() * 3)]
+        
+        num = generate_num(digits)
+        answer = float(num * multiplier)
+        operands = [num, multiplier]
+        text = f"{num} × {multiplier} ="
+    
+    elif question_type == "vedic_divide_by_5_25_125":
+        operator = "÷"
+        is_vertical = False
+        digits = constraints.digits if constraints.digits is not None else 2
+        digits = max(1, min(10, digits))
+        
+        # Randomly choose 5, 25, or 125
+        divisors = [5, 25, 125]
+        divisor = divisors[int(random_func() * 3)]
+        
+        # Generate dividend that will result in decimal answer
+        num = generate_num(digits)
+        # Ensure it's not perfectly divisible
+        while num % divisor == 0:
+            num = generate_num(digits)
+        
+        answer = float(num / divisor)
+        operands = [num, divisor]
+        text = f"{num} ÷ {divisor} ="
+    
+    elif question_type == "vedic_multiply_by_5_50_500":
+        operator = "×"
+        is_vertical = False
+        digits = constraints.digits if constraints.digits is not None else 2
+        digits = max(1, min(10, digits))
+        
+        # Randomly choose 5, 50, or 500
+        multipliers = [5, 50, 500]
+        multiplier = multipliers[int(random_func() * 3)]
+        
+        num = generate_num(digits)
+        answer = float(num * multiplier)
+        operands = [num, multiplier]
+        text = f"{num} × {multiplier} ="
+    
+    elif question_type == "vedic_divide_by_5_50_500":
+        operator = "÷"
+        is_vertical = False
+        digits = constraints.digits if constraints.digits is not None else 2
+        digits = max(1, min(10, digits))
+        
+        # Randomly choose 5, 50, or 500
+        divisors = [5, 50, 500]
+        divisor = divisors[int(random_func() * 3)]
+        
+        # Generate dividend that will result in decimal answer
+        num = generate_num(digits)
+        # Ensure it's not perfectly divisible
+        while num % divisor == 0:
+            num = generate_num(digits)
+        
+        answer = float(num / divisor)
+        operands = [num, divisor]
+        text = f"{num} ÷ {divisor} ="
+    
+    elif question_type == "vedic_vinculum":
+        operator = "V"
+        is_vertical = False
+        # Coming Soon - placeholder
+        num = generate_num(2)
+        answer = float(num)
+        operands = [num]
+        text = f"Vinculum of {num} (Coming Soon)"
+    
+    elif question_type == "vedic_devinculum":
+        operator = "DV"
+        is_vertical = False
+        # Coming Soon - placeholder
+        num = generate_num(2)
+        answer = float(num)
+        operands = [num]
+        text = f"DeVinculum of {num} (Coming Soon)"
+    
+    elif question_type == "vedic_subtraction_powers_of_10":
+        operator = "-"
+        is_vertical = False
+        # Subtract from 100, 1000, 10000, etc.
+        power = constraints.powerOf10 if constraints.powerOf10 is not None else None
+        if power is None:
+            # Randomly choose power: 2 (100), 3 (1000), 4 (10000), 5 (100000), 6 (1000000)
+            power = int(random_func() * 5) + 2  # 2-6
+        
+        base = 10 ** power
+        # Generate number less than base
+        num = int(random_func() * (base - 1)) + 1
+        answer = float(base - num)
+        operands = [base, num]
+        text = f"{base} - {num} ="
+    
+    elif question_type == "vedic_special_products_base_1000":
+        operator = "×"
+        is_vertical = False
+        # Like base 100 but with 1 more digit: 994 × 993, 1009 × 1007
+        # Generate numbers near 1000
+        offset1 = int(random_func() * 20) - 10  # -10 to +9
+        offset2 = int(random_func() * 20) - 10
+        
+        num1 = 1000 + offset1
+        num2 = 1000 + offset2
+        
+        # Ensure both are positive
+        num1 = max(1, num1)
+        num2 = max(1, num2)
+        
+        answer = float(num1 * num2)
+        operands = [num1, num2]
+        text = f"{num1} × {num2} ="
+    
+    elif question_type == "vedic_special_products_cross_multiply":
+        operator = "×"
+        is_vertical = False
+        # Base same but numbers above and below: 1003 × 993, 102 × 96
+        base = constraints.base if constraints.base is not None else 100
+        base = 10 ** int(math.log10(base)) if base > 0 else 100
+        
+        # Generate offsets: one positive, one negative
+        max_offset = min(base // 10, 50)  # Limit offset
+        offset1 = int(random_func() * max_offset) + 1  # Positive
+        offset2 = -(int(random_func() * max_offset) + 1)  # Negative
+        
+        num1 = base + offset1
+        num2 = base + offset2
+        
+        # Ensure both are positive
+        num1 = max(1, num1)
+        num2 = max(1, num2)
+        
+        answer = float(num1 * num2)
+        operands = [num1, num2]
+        text = f"{num1} × {num2} ="
+    
+    elif question_type == "vedic_special_products_cross_base":
+        operator = "×"
+        is_vertical = False
+        # Across bases: 1002 × 93, 997 × 102
+        base1 = 1000
+        base2 = 100
+        
+        offset1 = int(random_func() * 20) - 10  # -10 to +9
+        offset2 = int(random_func() * 20) - 10
+        
+        num1 = base1 + offset1
+        num2 = base2 + offset2
+        
+        # Ensure both are positive
+        num1 = max(1, num1)
+        num2 = max(1, num2)
+        
+        answer = float(num1 * num2)
+        operands = [num1, num2]
+        text = f"{num1} × {num2} ="
+    
+    elif question_type == "vedic_special_products_cross_base_50":
+        operator = "×"
+        is_vertical = False
+        # Base 50 with numbers above and below: 49 × 51, 53 × 42
+        offset1 = int(random_func() * 20) - 10  # -10 to +9
+        offset2 = int(random_func() * 20) - 10
+        
+        num1 = 50 + offset1
+        num2 = 50 + offset2
+        
+        # Ensure both are positive
+        num1 = max(1, num1)
+        num2 = max(1, num2)
+        
+        answer = float(num1 * num2)
+        operands = [num1, num2]
+        text = f"{num1} × {num2} ="
+    
+    elif question_type == "vedic_duplex":
+        operator = "D"
+        is_vertical = False
+        # Duplex of numbers: D of 56, D of 567, D of 1234, etc.
+        digits = constraints.digits if constraints.digits is not None else 2
+        digits = max(2, min(10, digits))  # At least 2 digits for duplex
+        
+        num = generate_num(digits)
+        num_str = str(num)
+        
+        # Calculate duplex
+        # D of 56 = 5 × 6 × 2
+        # D of 567 = (5 × 7 × 2) + 6²
+        # D of 1234 = (1 × 4 × 2) + (2 × 3 × 2)
+        # D of 12345 = (1 × 5 × 2) + (2 × 4 × 2) + 3²
+        duplex_value = 0
+        n = len(num_str)
+        for i in range(n // 2):
+            left_idx = i
+            right_idx = n - 1 - i
+            if left_idx < right_idx:
+                left_digit = int(num_str[left_idx])
+                right_digit = int(num_str[right_idx])
+                duplex_value += left_digit * right_digit * 2
+        # Add middle digit squared if odd length
+        if n % 2 == 1:
+            mid_idx = n // 2
+            mid_digit = int(num_str[mid_idx])
+            duplex_value += mid_digit * mid_digit
+        
+        answer = float(duplex_value)
+        operands = [num]
+        text = f"D of {num}"
+    
+    elif question_type == "vedic_squares_duplex":
+        operator = "²"
+        is_vertical = False
+        # Squares using duplex method: 49², 567², 2654²
+        digits = constraints.digits if constraints.digits is not None else 2
+        digits = max(1, min(10, digits))
+        
+        num = generate_num(digits)
+        answer = float(num * num)
+        operands = [num]
+        text = f"{num}² ="
+    
+    elif question_type == "vedic_divide_with_remainder":
+        operator = "÷"
+        is_vertical = False
+        # Divide by single digit with decimal answer
+        digits = constraints.digits if constraints.digits is not None else 2
+        digits = max(1, min(10, digits))
+        
+        divisor = int(random_func() * 8) + 2  # 2-9
+        num = generate_num(digits)
+        # Ensure it's not perfectly divisible
+        while num % divisor == 0:
+            num = generate_num(digits)
+        
+        answer = float(num / divisor)
+        operands = [num, divisor]
+        text = f"{num} ÷ {divisor} ="
+    
+    elif question_type == "vedic_divide_by_9s_repetition":
+        operator = "÷"
+        is_vertical = False
+        digits = constraints.digits if constraints.digits is not None else 2
+        digits = max(1, min(10, digits))
+        
+        # Get case: equal, less_than, or mix
+        case = constraints.divideBy9sCase if constraints.divideBy9sCase else "mix"
+        if case == "mix":
+            case_choice = int(random_func() * 2)
+            case = "equal" if case_choice == 0 else "less_than"
+        
+        num = generate_num(digits)
+        
+        if case == "equal":
+            # Equal digits: 5/9, 659/999
+            divisor_9s = int("9" * digits)
+        else:  # less_than
+            # Less than: 257/9999, 802/99999
+            divisor_9s = int("9" * (digits + 1))
+        
+        answer = float(num / divisor_9s)
+        operands = [num, divisor_9s]
+        text = f"{num} ÷ {divisor_9s} ="
+    
+    elif question_type == "vedic_divide_by_11s_repetition":
+        operator = "÷"
+        is_vertical = False
+        digits = constraints.digits if constraints.digits is not None else 2
+        digits = max(1, min(10, digits))
+        
+        # Get case: equal, less_than, or mix
+        case = constraints.divideBy11sCase if constraints.divideBy11sCase else "mix"
+        if case == "mix":
+            case_choice = int(random_func() * 2)
+            case = "equal" if case_choice == 0 else "less_than"
+        
+        num = generate_num(digits)
+        
+        if case == "equal":
+            # Equal: first "11" + (digits-1) more 1s: 4/11, 512/1111, 678546/1111111
+            divisor_11s = int("1" * (digits + 1))
+        else:  # less_than
+            # Less than: 6/111, 121/11111
+            divisor_11s = int("1" * (digits + 2))
+        
+        answer = float(num / divisor_11s)
+        operands = [num, divisor_11s]
+        text = f"{num} ÷ {divisor_11s} ="
+    
+    elif question_type == "vedic_divide_by_7":
+        operator = "÷"
+        is_vertical = False
+        digits = constraints.digits if constraints.digits is not None else 2
+        digits = max(1, min(10, digits))
+        
+        num = generate_num(digits)
+        # Ensure it's not perfectly divisible
+        while num % 7 == 0:
+            num = generate_num(digits)
+        
+        answer = float(num / 7)
+        operands = [num, 7]
+        text = f"{num} ÷ 7 ="
+    
+    # ========== VEDIC MATHS LEVEL 3 OPERATIONS ==========
+    elif question_type == "vedic_multiply_by_111_999":
+        operator = "×"
+        is_vertical = False
+        digits = constraints.digits if constraints.digits is not None else 2
+        digits = max(1, min(10, digits))
+        
+        # Random multiplier: 111, 222, 333, ..., 999
+        multiplier_digit = int(random_func() * 9) + 1  # 1-9
+        multiplier = int(str(multiplier_digit) * 3)  # 111, 222, ..., 999
+        
+        num = generate_num(digits)
+        answer = float(num * multiplier)
+        operands = [num, multiplier]
+        text = f"{num} × {multiplier} ="
+    
+    elif question_type == "vedic_multiply_by_102_109":
+        operator = "×"
+        is_vertical = False
+        digits = constraints.digits if constraints.digits is not None else 2
+        digits = max(1, min(10, digits))
+        
+        # Random multiplier: 102, 103, ..., 109
+        multiplier = int(random_func() * 8) + 102  # 102-109
+        
+        num = generate_num(digits)
+        answer = float(num * multiplier)
+        operands = [num, multiplier]
+        text = f"{num} × {multiplier} ="
+    
+    elif question_type == "vedic_multiply_by_112_119":
+        operator = "×"
+        is_vertical = False
+        digits = constraints.digits if constraints.digits is not None else 2
+        digits = max(1, min(10, digits))
+        
+        # Random multiplier: 112, 113, ..., 119
+        multiplier = int(random_func() * 8) + 112  # 112-119
+        
+        num = generate_num(digits)
+        answer = float(num * multiplier)
+        operands = [num, multiplier]
+        text = f"{num} × {multiplier} ="
+    
+    elif question_type == "vedic_multiplication":
+        operator = "×"
+        is_vertical = False
+        # 6 cases: 2x2, 3x2, 4x2, 3x3, 4x3, 4x4
+        case = constraints.multiplicationCase if constraints.multiplicationCase else "2x2"
+        if case == "mix":
+            cases = ["2x2", "3x2", "4x2", "3x3", "4x3", "4x4"]
+            case = cases[int(random_func() * len(cases))]
+        
+        if case == "2x2":
+            num1 = generate_num(2)
+            num2 = generate_num(2)
+        elif case == "3x2":
+            num1 = generate_num(3)
+            num2 = generate_num(2)
+        elif case == "4x2":
+            num1 = generate_num(4)
+            num2 = generate_num(2)
+        elif case == "3x3":
+            num1 = generate_num(3)
+            num2 = generate_num(3)
+        elif case == "4x3":
+            num1 = generate_num(4)
+            num2 = generate_num(3)
+        else:  # 4x4
+            num1 = generate_num(4)
+            num2 = generate_num(4)
+        
+        answer = float(num1 * num2)
+        operands = [num1, num2]
+        text = f"{num1} × {num2} ="
+    
+    elif question_type == "vedic_mix_multiplication":
+        operator = "×"
+        is_vertical = False
+        # 2X2X2 multiplication: 35 × 21 × 27
+        num1 = generate_num(2)
+        num2 = generate_num(2)
+        num3 = generate_num(2)
+        
+        answer = float(num1 * num2 * num3)
+        operands = [num1, num2, num3]
+        text = f"{num1} × {num2} × {num3} ="
+    
+    elif question_type == "vedic_combined_operation":
+        operator = "+"
+        is_vertical = False
+        # (2X1) + (2X1): (34 × 6) + (47 × 3)
+        num1 = generate_num(2)
+        mult1 = generate_num(1)
+        num2 = generate_num(2)
+        mult2 = generate_num(1)
+        
+        part1 = num1 * mult1
+        part2 = num2 * mult2
+        answer = float(part1 + part2)
+        operands = [num1, mult1, num2, mult2]
+        text = f"({num1} × {mult1}) + ({num2} × {mult2}) ="
+    
+    elif question_type == "vedic_fraction_simplification":
+        operator = "/"
+        is_vertical = False
+        # Fractions that can be simplified: 14/28, 33/77, 14/21, 35/63
+        # Generate a fraction that has a common factor
+        # Generate numerator and denominator with a common factor
+        common_factor = int(random_func() * 8) + 2  # 2-9
+        num_mult = int(random_func() * 8) + 2  # 2-9
+        den_mult = int(random_func() * 8) + 2  # 2-9
+        
+        numerator = common_factor * num_mult
+        denominator = common_factor * den_mult
+        
+        # Ensure they're not the same
+        while numerator == denominator:
+            num_mult = int(random_func() * 8) + 2
+            numerator = common_factor * num_mult
+        
+        answer = float(numerator / denominator)
+        operands = [numerator, denominator]
+        text = f"{numerator}/{denominator} ="
+    
+    elif question_type == "vedic_fraction_addition":
+        operator = "+"
+        is_vertical = False
+        # 4 cases: Direct, Different Denominator, Whole, Mix
+        case = constraints.fractionCase if constraints.fractionCase else "mix"
+        if case == "mix":
+            cases = ["direct", "different_denominator", "whole"]
+            case = cases[int(random_func() * len(cases))]
+        
+        if case == "direct":
+            # Same denominator: 5/8 + 7/8
+            den = int(random_func() * 90) + 2  # 2-91
+            num1 = int(random_func() * (den - 1)) + 1
+            num2 = int(random_func() * (den - 1)) + 1
+            answer = float((num1 + num2) / den)
+            operands = [num1, den, num2, den]
+            text = f"{num1}/{den} + {num2}/{den} ="
+        elif case == "different_denominator":
+            # Different denominators: 1/2 + 1/6, 28/29 + 34/87
+            den1 = int(random_func() * 90) + 2
+            den2 = int(random_func() * 90) + 2
+            while den1 == den2:
+                den2 = int(random_func() * 90) + 2
+            num1 = int(random_func() * (den1 - 1)) + 1
+            num2 = int(random_func() * (den2 - 1)) + 1
+            # Calculate answer using LCM
+            lcm_den = lcm(den1, den2)
+            answer = float((num1 * (lcm_den // den1) + num2 * (lcm_den // den2)) / lcm_den)
+            operands = [num1, den1, num2, den2]
+            text = f"{num1}/{den1} + {num2}/{den2} ="
+        else:  # whole
+            # Whole number + fraction: 247 + 5/6, 31 + 2/8
+            whole = generate_num(int(random_func() * 3) + 1)  # 1-3 digits
+            den = int(random_func() * 90) + 2
+            num = int(random_func() * (den - 1)) + 1
+            answer = float(whole + (num / den))
+            operands = [whole, num, den]
+            text = f"{whole} + {num}/{den} ="
+    
+    elif question_type == "vedic_fraction_subtraction":
+        operator = "-"
+        is_vertical = False
+        # 4 cases: Direct, Different Denominator, Whole, Mix
+        case = constraints.fractionCase if constraints.fractionCase else "mix"
+        if case == "mix":
+            cases = ["direct", "different_denominator", "whole"]
+            case = cases[int(random_func() * len(cases))]
+        
+        if case == "direct":
+            # Same denominator: 7/9 - 3/9
+            den = int(random_func() * 90) + 2
+            num1 = int(random_func() * (den - 1)) + 1
+            num2 = int(random_func() * (den - 1)) + 1
+            # Ensure num1 >= num2 for positive result
+            if num1 < num2:
+                num1, num2 = num2, num1
+            answer = float((num1 - num2) / den)
+            operands = [num1, den, num2, den]
+            text = f"{num1}/{den} - {num2}/{den} ="
+        elif case == "different_denominator":
+            # Different denominators: 3/4 - 2/8, 38/47 - 19/32
+            den1 = int(random_func() * 90) + 2
+            den2 = int(random_func() * 90) + 2
+            while den1 == den2:
+                den2 = int(random_func() * 90) + 2
+            num1 = int(random_func() * (den1 - 1)) + 1
+            num2 = int(random_func() * (den2 - 1)) + 1
+            # Calculate answer using LCM, ensure positive
+            from math import lcm
+            lcm_den = lcm(den1, den2)
+            result_num = (num1 * (lcm_den // den1)) - (num2 * (lcm_den // den2))
+            if result_num < 0:
+                # Swap to ensure positive
+                num1, num2 = num2, num1
+                den1, den2 = den2, den1
+                lcm_den = lcm(den1, den2)
+                result_num = (num1 * (lcm_den // den1)) - (num2 * (lcm_den // den2))
+            answer = float(result_num / lcm_den)
+            operands = [num1, den1, num2, den2]
+            text = f"{num1}/{den1} - {num2}/{den2} ="
+        else:  # whole
+            # Whole number - fraction: 34 - 6/9, 983 - 21/37
+            whole = generate_num(int(random_func() * 3) + 1)  # 1-3 digits
+            den = int(random_func() * 90) + 2
+            num = int(random_func() * (den - 1)) + 1
+            answer = float(whole - (num / den))
+            operands = [whole, num, den]
+            text = f"{whole} - {num}/{den} ="
+    
+    elif question_type == "vedic_squares_level3":
+        operator = "²"
+        is_vertical = False
+        # Squares like 22², 333², 7777², etc (repeating digits)
+        digits = constraints.digits if constraints.digits is not None else 2
+        digits = max(1, min(10, digits))
+        
+        digit = int(random_func() * 9) + 1  # 1-9
+        num = int(str(digit) * digits)  # 22, 333, 7777, etc
+        
+        answer = float(num * num)
+        operands = [num]
+        text = f"{num}² ="
+    
+    elif question_type == "vedic_percentage_level3":
+        operator = "%"
+        is_vertical = False
+        # Percentage: 23% of 494, 273% of 981
+        percentage = int(random_func() * 300) + 1  # 1-300%
+        digits = constraints.digits if constraints.digits is not None else 3
+        digits = max(1, min(10, digits))
+        
+        number = generate_num(digits)
+        answer = float((percentage / 100.0) * number)
+        operands = [percentage, number]
+        text = f"{percentage}% of {number} ="
+    
+    elif question_type == "vedic_squares_addition":
+        operator = "+"
+        is_vertical = False
+        # Sum of two squares: 69² + 42²
+        digits = constraints.digits if constraints.digits is not None else 2
+        digits = max(1, min(10, digits))
+        
+        num1 = generate_num(digits)
+        num2 = generate_num(digits)
+        
+        answer = float((num1 * num1) + (num2 * num2))
+        operands = [num1, num2]
+        text = f"{num1}² + {num2}² ="
+    
+    elif question_type == "vedic_squares_subtraction":
+        operator = "-"
+        is_vertical = False
+        # Difference of squares with difference of 1: 82² - 81², 956² - 955²
+        digits = constraints.digits if constraints.digits is not None else 2
+        digits = max(2, min(10, digits))
+        
+        num1 = generate_num(digits)
+        num2 = num1 - 1  # Difference of 1
+        
+        answer = float((num1 * num1) - (num2 * num2))
+        operands = [num1, num2]
+        text = f"{num1}² - {num2}² ="
+    
+    elif question_type == "vedic_squares_deviation":
+        operator = "²"
+        is_vertical = False
+        # 2 and 3 digit squares using deviation method: 72², 973²
+        digits = int(random_func() * 2) + 2  # 2 or 3
+        num = generate_num(digits)
+        
+        answer = float(num * num)
+        operands = [num]
+        text = f"{num}² ="
+    
+    elif question_type == "vedic_cubes":
+        operator = "³"
+        is_vertical = False
+        # 2 digit cubes: 34³, 63³
+        num = generate_num(2)
+        
+        answer = float(num * num * num)
+        operands = [num]
+        text = f"{num}³ ="
+    
+    elif question_type == "vedic_check_divisibility":
+        operator = "?"
+        is_vertical = False
+        # Check divisibility by 2,3,4,5,6,8,9,10
+        divisors = [2, 3, 4, 5, 6, 8, 9, 10]
+        divisor = constraints.divisorCheck if constraints.divisorCheck and constraints.divisorCheck in divisors else None
+        if divisor is None:
+            divisor = divisors[int(random_func() * len(divisors))]
+        
+        digits = constraints.digits if constraints.digits is not None else 3
+        digits = max(1, min(10, digits))
+        
+        num = generate_num(digits)
+        is_divisible = (num % divisor == 0)
+        answer = 1.0 if is_divisible else 0.0  # 1 for Yes, 0 for No
+        operands = [num, divisor]
+        text = f"{num} By {divisor}"
+    
+    elif question_type == "vedic_missing_numbers":
+        operator = "×"
+        is_vertical = False
+        # Missing digit in 2X2 multiplication: 6_ × 74 = 4736, _3 × 74 = 6142
+        num1 = generate_num(2)
+        num2 = generate_num(2)
+        correct_answer = num1 * num2
+        
+        # Randomly choose which digit to hide
+        hide_position = int(random_func() * 4)  # 0-3: first digit of num1, second of num1, first of num2, second of num2
+        
+        if hide_position == 0:
+            # Hide first digit of num1: _3 × 74
+            num1_str = f"_{num1 % 10}"
+            num2_str = str(num2)
+        elif hide_position == 1:
+            # Hide second digit of num1: 6_ × 74
+            num1_str = f"{num1 // 10}_"
+            num2_str = str(num2)
+        elif hide_position == 2:
+            # Hide first digit of num2: 29 × _9
+            num1_str = str(num1)
+            num2_str = f"_{num2 % 10}"
+        else:
+            # Hide second digit of num2: 79 × 3_
+            num1_str = str(num1)
+            num2_str = f"{num2 // 10}_"
+        
+        answer = float(correct_answer)
+        operands = [num1, num2]
+        text = f"{num1_str} × {num2_str} = {correct_answer}"
+    
+    elif question_type == "vedic_box_multiply":
+        operator = "×"
+        is_vertical = False
+        # Coming Soon - placeholder
+        num = generate_num(2)
+        answer = float(num)
+        operands = [num]
+        text = f"Box Multiply of {num} (Coming Soon)"
+    
+    elif question_type == "vedic_multiply_by_10001":
+        operator = "×"
+        is_vertical = False
+        digits = constraints.digits if constraints.digits is not None else 2
+        digits = max(1, min(10, digits))
+        
+        num = generate_num(digits)
+        answer = float(num * 10001)
+        operands = [num, 10001]
+        text = f"{num} × 10001 ="
+    
+    elif question_type == "vedic_duplex_level3":
+        operator = "D"
+        is_vertical = False
+        # Same as level 2 duplex
+        digits = constraints.digits if constraints.digits is not None else 2
+        digits = max(2, min(10, digits))
+        
+        num = generate_num(digits)
+        num_str = str(num)
+        
+        # Calculate duplex (same logic as level 2)
+        duplex_value = 0
+        n = len(num_str)
+        for i in range(n // 2):
+            left_idx = i
+            right_idx = n - 1 - i
+            if left_idx < right_idx:
+                left_digit = int(num_str[left_idx])
+                right_digit = int(num_str[right_idx])
+                duplex_value += left_digit * right_digit * 2
+        if n % 2 == 1:
+            mid_idx = n // 2
+            mid_digit = int(num_str[mid_idx])
+            duplex_value += mid_digit * mid_digit
+        
+        answer = float(duplex_value)
+        operands = [num]
+        text = f"D of {num}"
+    
+    elif question_type == "vedic_squares_large":
+        operator = "²"
+        is_vertical = False
+        # Large squares: 63497², 269534²
+        digits = constraints.digits if constraints.digits is not None else 5
+        digits = max(4, min(10, digits))  # At least 4 digits
+        
+        num = generate_num(digits)
+        answer = float(num * num)
+        operands = [num]
+        text = f"{num}² ="
+    
+    elif question_type == "vedic_dropping_10_method":
+        operator = "±"
+        is_vertical = True
+        # Basic add/sub like abacus: same as add_sub but with different name
+        digits = constraints.digits if constraints.digits is not None else 2
+        rows = constraints.rows if constraints.rows is not None else 3
+        rows = max(2, min(30, rows))
+        digits = max(1, min(5, digits))  # Limit for dropping 10 method
+        
+        max_val = (10 ** digits) - 1
+        min_val = 10 ** (digits - 1) if digits > 1 else 1
+        
+        operands = []
+        for _ in range(rows):
+            num = int(random_func() * (max_val - min_val + 1)) + min_val
+            operands.append(num)
+        
+        operators_list = []
+        for i in range(rows - 1):
+            op = "+" if random_func() < 0.5 else "-"
+            operators_list.append(op)
+        
+        answer = float(operands[0])
+        for i, op in enumerate(operators_list):
+            if op == "+":
+                answer += operands[i + 1]
+            else:
+                answer -= operands[i + 1]
+        
+        if answer < 0:
+            return generate_question(question_id, question_type, constraints, seed, retry_count + 1)
+        
+        operators = operators_list
+        text = None  # Will be built below
+    
+    # Vedic Maths Level 4 operations
+    elif question_type == "vedic_multiplication_level4":
+        operator = "×"
+        is_vertical = False
+        # Normal random multiplication: 25463 X 29, 763249 X 465382
+        multiplicand_digits = constraints.multiplicandDigits if constraints.multiplicandDigits is not None else 3
+        multiplier_digits = constraints.multiplierDigits if constraints.multiplierDigits is not None else 2
+        multiplicand_digits = max(1, min(10, multiplicand_digits))
+        multiplier_digits = max(1, min(10, multiplier_digits))
+        
+        multiplicand = generate_num(multiplicand_digits)
+        multiplier = generate_num(multiplier_digits)
+        answer = float(multiplicand * multiplier)
+        operands = [multiplicand, multiplier]
+        text = f"{multiplicand} × {multiplier} ="
+    
+    elif question_type == "vedic_multiply_by_111_999_level4":
+        operator = "×"
+        is_vertical = False
+        # Any random number multiplied with any number of digits of 111-999: 245X1111, 60742 X 11111, 92659 X 55555
+        multiplicand_digits = constraints.multiplicandDigits if constraints.multiplicandDigits is not None else 3
+        multiplier_pattern_digits = constraints.multiplierDigits if constraints.multiplierDigits is not None else 4
+        multiplicand_digits = max(1, min(20, multiplicand_digits))  # Allow up to 20 digits as per schema
+        multiplier_pattern_digits = max(3, min(20, multiplier_pattern_digits))  # At least 3 digits (111), allow up to 20
+        
+        multiplicand = generate_num(multiplicand_digits)
+        # Generate multiplier as repeating digits (111, 1111, 222, 2222, etc.)
+        base_digit = int(random_func() * 9) + 1  # 1-9
+        multiplier = int(str(base_digit) * multiplier_pattern_digits)
+        answer = float(multiplicand * multiplier)
+        operands = [multiplicand, multiplier]
+        text = f"{multiplicand} × {multiplier} ="
+    
+    elif question_type == "vedic_decimal_add_sub":
+        operator = "±"
+        is_vertical = False
+        # Decimal addition/subtraction: 2.7 + 3.6, 326.3 + 29.8, 5.6 - 3.2, 496.8 - 312.6
+        digits = constraints.digits if constraints.digits is not None else 2
+        digits = max(1, min(5, digits))
+        
+        # Generate two decimal numbers
+        whole1 = generate_num(digits)
+        decimal1 = int(random_func() * 10)  # 0-9
+        num1 = whole1 + decimal1 / 10.0
+        
+        whole2 = generate_num(digits)
+        decimal2 = int(random_func() * 10)  # 0-9
+        num2 = whole2 + decimal2 / 10.0
+        
+        # Randomly choose addition or subtraction
+        is_add = random_func() < 0.5
+        if is_add:
+            answer = round(num1 + num2, 1)
+            operator = "+"
+            text = f"{num1} + {num2} ="
+        else:
+            # Ensure positive result
+            if num1 < num2:
+                num1, num2 = num2, num1
+            answer = round(num1 - num2, 1)
+            operator = "-"
+            text = f"{num1} - {num2} ="
+        
+        operands = [int(num1 * 10), int(num2 * 10)]  # Store as integers (multiply by 10)
+    
+    elif question_type == "vedic_fun_with_5_level4":
+        operator = "×"
+        is_vertical = False
+        # Fun with Five: 2.3 X 2.7, 8.7 X 8.3 (decimal) or 122 X 128, 263 X 267 (triple digits)
+        case = constraints.funWith5Case if constraints.funWith5Case else "mix"
+        if case == "mix":
+            case = "decimal" if random_func() < 0.5 else "triple"
+        
+        if case == "decimal":
+            # Decimal: numbers like 2.3, 2.7 (both end in .3 and .7, sum to 10)
+            whole = int(random_func() * 9) + 1  # 1-9
+            decimal1 = int(random_func() * 5) + 1  # 1-5
+            decimal2 = 10 - decimal1  # Complement to 10
+            num1 = whole + decimal1 / 10.0
+            num2 = whole + decimal2 / 10.0
+            answer = round(num1 * num2, 2)
+            text = f"{num1} × {num2} ="
+            operands = [int(num1 * 10), int(num2 * 10)]
+        else:  # triple
+            # Triple digits: 122 X 128 (both start with same digits, last digits sum to 10)
+            base = generate_num(2)  # 2-digit base
+            last1 = int(random_func() * 5) + 1  # 1-5
+            last2 = 10 - last1
+            num1 = base * 10 + last1
+            num2 = base * 10 + last2
+            answer = float(num1 * num2)
+            text = f"{num1} × {num2} ="
+            operands = [num1, num2]
+    
+    elif question_type == "vedic_fun_with_10_level4":
+        operator = "×"
+        is_vertical = False
+        # Fun with Ten: 3.4 X 7.4, 9.3 X 1.2 (decimal) or 971 X 171, 294 X 894, 555 X 555 (triple)
+        case = constraints.funWith10Case if constraints.funWith10Case else "mix"
+        if case == "mix":
+            case = "decimal" if random_func() < 0.5 else "triple"
+        
+        if case == "decimal":
+            # Decimal: numbers with same decimal part
+            whole1 = int(random_func() * 9) + 1  # 1-9
+            whole2 = int(random_func() * 9) + 1  # 1-9
+            decimal = int(random_func() * 10)  # 0-9
+            num1 = whole1 + decimal / 10.0
+            num2 = whole2 + decimal / 10.0
+            answer = round(num1 * num2, 2)
+            text = f"{num1} × {num2} ="
+            operands = [int(num1 * 10), int(num2 * 10)]
+        else:  # triple
+            # Triple digits: first digits sum to 10, last two digits same
+            # e.g., 371 × 631 (3+6=9, but should be 10), 294 × 794 (2+7=9, but should be 10)
+            # Correct: 371 × 631 (3+6=9, wrong), 294 × 794 (2+7=9, wrong)
+            # Should be: 371 × 631 (3+6=9, but we need 10), so 371 × 631 becomes 371 × 631
+            # Actually: first digit of num1 + first digit of num2 = 10, last two digits same
+            first1 = int(random_func() * 9) + 1  # 1-9
+            first2 = 10 - first1  # Complement to 10
+            last_two = int(random_func() * 90) + 10  # 10-99
+            num1 = first1 * 100 + last_two
+            num2 = first2 * 100 + last_two
+            answer = float(num1 * num2)
+            text = f"{num1} × {num2} ="
+            operands = [num1, num2]
+    
+    elif question_type == "vedic_find_x":
+        operator = "="
+        is_vertical = False
+        # Find The Value of X: x + 65 = 97, 5x + 43 = 103, 6x - 20 = 22, x - 29 = 17, 7x - 46 = 24
+        # Generate equation: ax + b = c or x + b = c or x - b = c
+        equation_type = int(random_func() * 4)  # 0: x + b = c, 1: x - b = c, 2: ax + b = c, 3: ax - b = c
+        
+        if equation_type == 0:  # x + b = c
+            b = int(random_func() * 50) + 10
+            x = int(random_func() * 50) + 10
+            c = x + b
+            text = f"x + {b} = {c}"
+            answer = float(x)
+            operands = [b, c]
+        elif equation_type == 1:  # x - b = c
+            b = int(random_func() * 50) + 10
+            x = int(random_func() * 50) + 30
+            c = x - b
+            text = f"x - {b} = {c}"
+            answer = float(x)
+            operands = [b, c]
+        elif equation_type == 2:  # ax + b = c
+            a = int(random_func() * 8) + 2  # 2-9
+            x = int(random_func() * 20) + 5
+            b = int(random_func() * 50) + 10
+            c = a * x + b
+            text = f"{a}x + {b} = {c}"
+            answer = float(x)
+            operands = [a, b, c]
+        else:  # ax - b = c
+            a = int(random_func() * 8) + 2  # 2-9
+            x = int(random_func() * 20) + 5
+            b = int(random_func() * 50) + 10
+            c = a * x - b
+            if c < 0:
+                c = a * x + b  # Ensure positive result
+                text = f"{a}x - {b} = {c}"
+                answer = float(x)
+            else:
+                text = f"{a}x - {b} = {c}"
+                answer = float(x)
+            operands = [a, b, c]
+    
+    elif question_type == "vedic_hcf":
+        operator = "HCF"
+        is_vertical = False
+        # HCF: (2, 6), (9, 63), (14, 36), (24, 108), (53, 212)
+        # Generate two numbers with a common factor
+        factor = int(random_func() * 20) + 2  # 2-21
+        mult1 = int(random_func() * 20) + 1  # 1-20
+        mult2 = int(random_func() * 20) + 1  # 1-20
+        num1 = factor * mult1
+        num2 = factor * mult2
+        
+        # Calculate HCF
+        def calculate_hcf(a, b):
+            while b:
+                a, b = b, a % b
+            return a
+        
+        answer = float(calculate_hcf(num1, num2))
+        operands = [num1, num2]
+        text = f"HCF({num1}, {num2}) ="
+    
+    elif question_type == "vedic_lcm_level4":
+        operator = "LCM"
+        is_vertical = False
+        # LCM: (1, 3), (8, 72), (12, 24), (29, 125), (54, 324)
+        # Generate two numbers
+        num1 = int(random_func() * 200) + 1  # 1-200
+        num2 = int(random_func() * 200) + 1  # 1-200
+        
+        # Calculate LCM
+        from math import gcd
+        answer = float((num1 * num2) // gcd(num1, num2))
+        operands = [num1, num2]
+        text = f"LCM({num1}, {num2}) ="
+    
+    elif question_type == "vedic_bar_add_sub":
+        # Coming Soon - placeholder
+        operator = "±"
+        is_vertical = False
+        digits = constraints.digits if constraints.digits is not None else 2
+        a = generate_num(digits)
+        b = generate_num(digits)
+        answer = float(a + b)
+        operands = [a, b]
+        text = f"{a} + {b} = (Coming Soon)"
+    
+    elif question_type == "vedic_fraction_multiplication":
+        operator = "×"
+        is_vertical = False
+        # Fraction multiplication: 4 x 3/4, 7 x 11/42, 5/7 x 1/5, 4/7 x 6/8, 8 x 12/64, 7/5 x 15/35, 11/13 x 15/22
+        case_type = int(random_func() * 3)  # 0: whole x fraction, 1: fraction x fraction, 2: whole x fraction (simplified)
+        
+        if case_type == 0:  # whole x fraction
+            whole = int(random_func() * 9) + 1
+            num = int(random_func() * 9) + 1
+            den = int(random_func() * 9) + 1
+            answer_num = whole * num
+            answer_den = den
+            # Simplify
+            from math import gcd
+            g = gcd(answer_num, answer_den)
+            answer_num //= g
+            answer_den //= g
+            text = f"{whole} × {num}/{den} ="
+            answer = float(answer_num) / float(answer_den) if answer_den != 0 else 0.0
+            operands = [whole, num, den]
+        elif case_type == 1:  # fraction x fraction
+            num1 = int(random_func() * 9) + 1
+            den1 = int(random_func() * 9) + 1
+            num2 = int(random_func() * 9) + 1
+            den2 = int(random_func() * 9) + 1
+            answer_num = num1 * num2
+            answer_den = den1 * den2
+            # Simplify
+            from math import gcd
+            g = gcd(answer_num, answer_den)
+            answer_num //= g
+            answer_den //= g
+            text = f"{num1}/{den1} × {num2}/{den2} ="
+            answer = float(answer_num) / float(answer_den) if answer_den != 0 else 0.0
+            operands = [num1, den1, num2, den2]
+        else:  # whole x fraction (with simplification)
+            whole = int(random_func() * 9) + 1
+            num = int(random_func() * 9) + 1
+            den = int(random_func() * 9) + 1
+            answer_num = whole * num
+            answer_den = den
+            # Simplify
+            from math import gcd
+            g = gcd(answer_num, answer_den)
+            answer_num //= g
+            answer_den //= g
+            text = f"{whole} × {num}/{den} ="
+            answer = float(answer_num) / float(answer_den) if answer_den != 0 else 0.0
+            operands = [whole, num, den]
+        # Store answer as fraction representation (numerator/denominator)
+        # For display, we'll use the decimal value but the text shows the fraction
+    
+    elif question_type == "vedic_fraction_division":
+        operator = "÷"
+        is_vertical = False
+        # Fraction division: 2 divided by 1/2, 2/3 divided by 8/9, 8/7 divided by 64/49, 19/21 divided by 57/84
+        case_type = int(random_func() * 2)  # 0: whole ÷ fraction, 1: fraction ÷ fraction
+        
+        if case_type == 0:  # whole ÷ fraction
+            whole = int(random_func() * 9) + 1
+            num = int(random_func() * 9) + 1
+            den = int(random_func() * 9) + 1
+            answer_num = whole * den
+            answer_den = num
+            # Simplify
+            from math import gcd
+            g = gcd(answer_num, answer_den)
+            answer_num //= g
+            answer_den //= g
+            text = f"{whole} ÷ {num}/{den} ="
+            answer = float(answer_num) / float(answer_den) if answer_den != 0 else 0.0
+            operands = [whole, num, den]
+        else:  # fraction ÷ fraction
+            num1 = int(random_func() * 9) + 1
+            den1 = int(random_func() * 9) + 1
+            num2 = int(random_func() * 9) + 1
+            den2 = int(random_func() * 9) + 1
+            answer_num = num1 * den2
+            answer_den = den1 * num2
+            # Simplify
+            from math import gcd
+            g = gcd(answer_num, answer_den)
+            answer_num //= g
+            answer_den //= g
+            text = f"{num1}/{den1} ÷ {num2}/{den2} ="
+            answer = float(answer_num) / float(answer_den) if answer_den != 0 else 0.0
+            operands = [num1, den1, num2, den2]
+    
+    elif question_type == "vedic_check_divisibility_level4":
+        operator = "?"
+        is_vertical = False
+        # Check divisibility: by 7, by 11, or random (12-39)
+        case = constraints.divisibilityCase if constraints.divisibilityCase else "random"
+        if case == "random":
+            case = "by_7" if random_func() < 0.33 else ("by_11" if random_func() < 0.5 else "random")
+        
+        if case == "by_7":
+            divisor = 7
+            num_digits = int(random_func() * 4) + 2  # 2-5 digits
+            num = generate_num(num_digits)
+            answer = 1.0 if num % 7 == 0 else 0.0  # 1 = Yes, 0 = No
+            text = f"{num} by {divisor}"
+        elif case == "by_11":
+            divisor = 11
+            num_digits = int(random_func() * 4) + 2  # 2-5 digits
+            num = generate_num(num_digits)
+            answer = 1.0 if num % 11 == 0 else 0.0
+            text = f"{num} by {divisor}"
+        else:  # random (12-39)
+            divisor = int(random_func() * 28) + 12  # 12-39
+            num_digits = int(random_func() * 4) + 2  # 2-5 digits
+            num = generate_num(num_digits)
+            answer = 1.0 if num % divisor == 0 else 0.0
+            text = f"{num} by {divisor}"
+        
+        operands = [num, divisor]
+        # Answer: 1 = Yes, 0 = No
+    
+    elif question_type == "vedic_division_without_remainder":
+        # Copy from abacus basic division
+        operator = "÷"
+        is_vertical = False
+        dividend_digits = constraints.dividendDigits if constraints.dividendDigits is not None else 2
+        divisor_digits = constraints.divisorDigits if constraints.divisorDigits is not None else 1
+        dividend_digits = max(1, min(10, dividend_digits))
+        divisor_digits = max(1, min(5, divisor_digits))
+        
+        divisor = generate_num(divisor_digits)
+        if divisor == 0:
+            divisor = 1
+        # Generate dividend that is divisible by divisor
+        quotient = generate_num(dividend_digits - divisor_digits + 1)
+        dividend = divisor * quotient
+        answer = float(quotient)
+        operands = [dividend, divisor]
+        text = f"{dividend} ÷ {divisor} ="
+    
+    elif question_type == "vedic_division_with_remainder":
+        # Copy from abacus decimal division
+        operator = "÷"
+        is_vertical = False
+        dividend_digits = constraints.dividendDigits if constraints.dividendDigits is not None else 3
+        divisor_digits = constraints.divisorDigits if constraints.divisorDigits is not None else 1
+        dividend_digits = max(1, min(10, dividend_digits))
+        divisor_digits = max(1, min(5, divisor_digits))
+        
+        divisor = generate_num(divisor_digits)
+        if divisor == 0:
+            divisor = 1
+        dividend = generate_num(dividend_digits)
+        # Allow remainder
+        answer = round(float(dividend) / float(divisor), 2)
+        operands = [dividend, divisor]
+        text = f"{dividend} ÷ {divisor} ="
+    
+    elif question_type == "vedic_divide_by_11_99":
+        operator = "÷"
+        is_vertical = False
+        # Divide by 11, 22, 33, ..., 99
+        multiplier = int(random_func() * 9) + 1  # 1-9
+        divisor = multiplier * 11  # 11, 22, 33, ..., 99
+        dividend_digits = constraints.dividendDigits if constraints.dividendDigits is not None else 4
+        dividend_digits = max(2, min(6, dividend_digits))
+        
+        dividend = generate_num(dividend_digits)
+        answer = round(float(dividend) / float(divisor), 2)
+        operands = [dividend, divisor]
+        text = f"{dividend} ÷ {divisor} ="
+    
+    elif question_type == "vedic_division_9_8_7_6":
+        operator = "÷"
+        is_vertical = False
+        # Division by numbers ending in 9, 8, 7, or 6: 5/39, 56/38, etc.
+        case = constraints.division9_8_7_6Case if constraints.division9_8_7_6Case else "mix"
+        if case == "mix":
+            case = ["9", "8", "7", "6"][int(random_func() * 4)]
+        
+        last_digit = int(case)
+        # Generate 2-digit divisor ending in specified digit
+        tens = int(random_func() * 9) + 1  # 1-9
+        divisor = tens * 10 + last_digit  # e.g., 19, 29, 39, etc.
+        
+        # Generate 1-3 digit dividend
+        dividend_digits = int(random_func() * 3) + 1  # 1-3 digits
+        dividend = generate_num(dividend_digits)
+        answer = round(float(dividend) / float(divisor), 2)
+        operands = [dividend, divisor]
+        text = f"{dividend} ÷ {divisor} ="
+    
+    elif question_type == "vedic_division_91_121":
+        operator = "÷"
+        is_vertical = False
+        # Division by 91 or 121
+        case = constraints.division91_121Case if constraints.division91_121Case else "mix"
+        if case == "mix":
+            case = "91" if random_func() < 0.5 else "121"
+        
+        divisor = int(case)
+        # Generate 2-5 digit dividend
+        dividend_digits = int(random_func() * 4) + 2  # 2-5 digits
+        dividend = generate_num(dividend_digits)
+        answer = round(float(dividend) / float(divisor), 2)
+        operands = [dividend, divisor]
+        text = f"{dividend} ÷ {divisor} ="
+    
+    elif question_type == "vedic_digital_sum":
+        operator = "DS"
+        is_vertical = False
+        # Digital sum: sum of digits of a number
+        digits = constraints.digits if constraints.digits is not None else 4
+        digits = max(3, min(6, digits))  # 3-6 digits
+        
+        num = generate_num(digits)
+        answer = float(sum(int(d) for d in str(num)))
+        operands = [num]
+        text = f"Digital Sum of {num} ="
+    
+    elif question_type == "vedic_cubes_base_method":
+        operator = "³"
+        is_vertical = False
+        # Cubes using base method: 108³, 115³, 1007³, 1013³, 999³, 9989³, 9985³
+        # Numbers close to base (100, 1000, etc.)
+        base_type = int(random_func() * 2)  # 0: near 100, 1: near 1000
+        if base_type == 0:
+            base = 100
+            deviation = int(random_func() * 20) - 10  # -10 to +10
+            num = base + deviation
+        else:
+            base = 1000
+            deviation = int(random_func() * 20) - 10  # -10 to +10
+            num = base + deviation
+        
+        answer = float(num * num * num)
+        operands = [num]
+        text = f"{num}³ ="
+    
+    elif question_type == "vedic_check_perfect_cube":
+        operator = "?"
+        is_vertical = False
+        # Check if number is perfect cube: 4-6 digit numbers
+        digits = constraints.digits if constraints.digits is not None else 4
+        digits = max(4, min(6, digits))
+        
+        # 50% chance of perfect cube, 50% chance of not
+        if random_func() < 0.5:
+            # Generate perfect cube
+            cube_root = int(random_func() * 50) + 10  # 10-59
+            num = cube_root * cube_root * cube_root
+            answer = 1.0  # Yes
+        else:
+            # Generate non-perfect cube
+            num = generate_num(digits)
+            # Ensure it's not a perfect cube
+            while int(round(num ** (1/3))) ** 3 == num:
+                num = generate_num(digits)
+            answer = 0.0  # No
+        
+        operands = [num]
+        text = f"Is {num} a perfect cube?"
+        # Answer: 1 = Yes, 0 = No
+    
+    elif question_type == "vedic_cube_root_level4":
+        operator = "∛"
+        is_vertical = False
+        # Cube root: 4-10 digit numbers
+        digits = constraints.cubeRootDigits if constraints.cubeRootDigits is not None else 5
+        digits = max(4, min(10, digits))
+        
+        # Generate a perfect cube
+        cube_root = int(random_func() * 200) + 10  # 10-209
+        num = cube_root * cube_root * cube_root
+        # Ensure it has the right number of digits
+        while len(str(num)) < digits:
+            cube_root += 1
+            num = cube_root * cube_root * cube_root
+        while len(str(num)) > digits:
+            cube_root -= 1
+            num = cube_root * cube_root * cube_root
+        
+        answer = float(cube_root)
+        operands = [num]
+        text = f"∛{num} ="
+    
+    elif question_type == "vedic_bodmas":
+        operator = "="
+        is_vertical = False
+        # BODMAS: easy, medium, hard
+        difficulty = constraints.bodmasDifficulty if constraints.bodmasDifficulty else "medium"
+        if difficulty == "mix":
+            difficulty = ["easy", "medium", "hard"][int(random_func() * 3)]
+        
+        if difficulty == "easy":
+            # Simple: a + b × c
+            a = int(random_func() * 20) + 1
+            b = int(random_func() * 10) + 1
+            c = int(random_func() * 10) + 1
+            answer = float(a + b * c)
+            text = f"{a} + {b} × {c} ="
+            operands = [a, b, c]
+        elif difficulty == "medium":
+            # Medium: a × b + c × d
+            a = int(random_func() * 10) + 1
+            b = int(random_func() * 10) + 1
+            c = int(random_func() * 10) + 1
+            d = int(random_func() * 10) + 1
+            answer = float(a * b + c * d)
+            text = f"{a} × {b} + {c} × {d} ="
+            operands = [a, b, c, d]
+        else:  # hard
+            # Hard: a + b × c - d
+            a = int(random_func() * 50) + 10
+            b = int(random_func() * 10) + 1
+            c = int(random_func() * 10) + 1
+            d = int(random_func() * 20) + 1
+            answer = float(a + b * c - d)
+            text = f"{a} + {b} × {c} - {d} ="
+            operands = [a, b, c, d]
+    
+    elif question_type == "vedic_square_root_level4":
+        # Copy from abacus square_root
+        operator = "√"
+        is_vertical = False
+        root_digits = constraints.rootDigits if constraints.rootDigits is not None else 4
+        root_digits = max(1, min(30, root_digits))
+        
+        # Generate a perfect square
+        square_root = int(random_func() * 1000) + 10
+        num = square_root * square_root
+        # Ensure it has the right number of digits
+        while len(str(num)) < root_digits:
+            square_root += 1
+            num = square_root * square_root
+        while len(str(num)) > root_digits:
+            square_root -= 1
+            num = square_root * square_root
+        
+        answer = float(square_root)
+        operands = [num]
+        text = f"√{num} ="
+    
+    elif question_type == "vedic_magic_square":
+        # Coming Soon - placeholder
+        operator = "MS"
+        is_vertical = False
+        digits = constraints.digits if constraints.digits is not None else 2
+        a = generate_num(digits)
+        answer = float(a)
+        operands = [a]
+        text = f"Magic Square (Coming Soon)"
+    
     elif question_type == "percentage":
         operator = "%"
         is_vertical = False
@@ -1356,7 +2842,15 @@ def generate_question(
         "decimal_multiplication", "square_root", "cube_root", "lcm", "gcd", "integer_add_sub", 
         "decimal_division", "decimal_add_sub", "direct_add_sub", "small_friends_add_sub", 
         "big_friends_add_sub", "percentage",
-        "vedic_divide_by_2", "vedic_divide_by_4", "vedic_divide_single_digit", "vedic_divide_by_11"
+        "vedic_divide_by_2", "vedic_divide_by_4", "vedic_divide_single_digit", "vedic_divide_by_11",
+        "vedic_divide_by_5_25_125", "vedic_divide_by_5_50_500", "vedic_divide_with_remainder",
+        "vedic_divide_by_9s_repetition", "vedic_divide_by_11s_repetition", "vedic_divide_by_7",
+        # Vedic Level 4 operations with decimal/special answers
+        "vedic_decimal_add_sub", "vedic_fun_with_5_level4", "vedic_fun_with_10_level4",
+        "vedic_fraction_multiplication", "vedic_fraction_division", "vedic_division_with_remainder",
+        "vedic_divide_by_11_99", "vedic_division_9_8_7_6", "vedic_division_91_121",
+        "vedic_check_divisibility_level4", "vedic_check_perfect_cube", "vedic_cube_root_level4",
+        "vedic_square_root_level4", "vedic_bodmas", "vedic_hcf", "vedic_lcm_level4"
     )
     if question_type not in skip_answer_bounds:
         if constraints.minAnswer is not None and answer < constraints.minAnswer:
@@ -1406,9 +2900,25 @@ def generate_question(
     )
 
 
+def _create_question_signature(question: Question) -> str:
+    """Create a unique signature for a question to detect duplicates."""
+    # Create signature from operands and operators
+    if question.operators:
+        # For add_sub type with operators list
+        ops_str = "".join(question.operators)
+        operands_str = ",".join(map(str, question.operands))
+        return f"{question.operator}|{operands_str}|{ops_str}"
+    else:
+        # For simple operations
+        operands_str = ",".join(map(str, sorted(question.operands)))
+        return f"{question.operator}|{operands_str}"
+
+
 def generate_block(block_config: BlockConfig, start_id: int, seed: Optional[int] = None) -> GeneratedBlock:
-    """Generate a block of questions."""
+    """Generate a block of questions with uniqueness guarantee."""
     questions = []
+    seen_signatures = set()  # Track unique question signatures
+    max_retries_per_question = 50  # Maximum retries to find unique question
     
     # For vedic_tables, use rows (or count) to determine how many table rows to generate
     if block_config.type == "vedic_tables":
@@ -1461,23 +2971,93 @@ def generate_block(block_config: BlockConfig, start_id: int, seed: Optional[int]
                     isVertical=False
                 ))
     else:
-        # Standard generation for other question types
+        # Standard generation for other question types with uniqueness guarantee
         for i in range(block_config.count):
-            try:
-                question = generate_question(
-                    start_id + i,
-                    block_config.type,
-                    block_config.constraints,
-                    seed
-                )
-                questions.append(question)
-            except Exception as e:
-                # Fallback question - ensure digits is defined
+            question = None
+            retry_count = 0
+            question_seed = seed
+            
+            # Try to generate a unique question
+            while retry_count < max_retries_per_question:
+                try:
+                    # Use different seed variation for each retry to get different results
+                    current_seed = question_seed
+                    if retry_count > 0:
+                        # Vary the seed significantly for retries to ensure different questions
+                        current_seed = (question_seed or 0) + (retry_count * 1000) + (i * 100) if question_seed else None
+                    
+                    question = generate_question(
+                        start_id + i,
+                        block_config.type,
+                        block_config.constraints,
+                        current_seed
+                    )
+                    
+                    # Check for uniqueness
+                    signature = _create_question_signature(question)
+                    if signature not in seen_signatures:
+                        seen_signatures.add(signature)
+                        questions.append(question)
+                        break
+                    else:
+                        # Duplicate found, retry with different seed
+                        retry_count += 1
+                        question = None
+                        
+                except Exception as e:
+                    retry_count += 1
+                    if retry_count >= max_retries_per_question:
+                        # Fallback question after max retries
+                        try:
+                            digits = block_config.constraints.digits if block_config.constraints.digits is not None else 1
+                            num1 = 10 ** (digits - 1) + (i % 9)  # Vary the number
+                            num2 = 10 ** (digits - 1) + ((i * 3) % 9)  # Different variation
+                            question = Question(
+                                id=start_id + i,
+                                text=f"{num1}\n+ {num2}",
+                                operands=[num1, num2],
+                                operator="+",
+                                operators=None,
+                                answer=float(num1 + num2),
+                                isVertical=True
+                            )
+                            signature = _create_question_signature(question)
+                            if signature not in seen_signatures:
+                                seen_signatures.add(signature)
+                                questions.append(question)
+                            else:
+                                # Even fallback is duplicate, use minimal variation
+                                num1 = 10 ** (digits - 1) + (i % 8) + 1
+                                num2 = 10 ** (digits - 1) + ((i * 7 + 1) % 8) + 1
+                                question = Question(
+                                    id=start_id + i,
+                                    text=f"{num1}\n+ {num2}",
+                                    operands=[num1, num2],
+                                    operator="+",
+                                    operators=None,
+                                    answer=float(num1 + num2),
+                                    isVertical=True
+                                )
+                                questions.append(question)
+                        except Exception:
+                            # Ultimate fallback
+                            questions.append(Question(
+                                id=start_id + i,
+                                text="10\n+ 10",
+                                operands=[10, 10],
+                                operator="+",
+                                operators=None,
+                                answer=20.0,
+                                isVertical=True
+                            ))
+            
+            # If we still don't have a question after all retries, use fallback
+            if question is None:
                 try:
                     digits = block_config.constraints.digits if block_config.constraints.digits is not None else 1
-                    num1 = 10 ** (digits - 1)
-                    num2 = 10 ** (digits - 1)
-                    questions.append(Question(
+                    num1 = 10 ** (digits - 1) + (i % 9)
+                    num2 = 10 ** (digits - 1) + ((i * 3) % 9)
+                    question = Question(
                         id=start_id + i,
                         text=f"{num1}\n+ {num2}",
                         operands=[num1, num2],
@@ -1485,9 +3065,9 @@ def generate_block(block_config: BlockConfig, start_id: int, seed: Optional[int]
                         operators=None,
                         answer=float(num1 + num2),
                         isVertical=True
-                    ))
+                    )
+                    questions.append(question)
                 except Exception:
-                    # Ultimate fallback if even digits access fails
                     questions.append(Question(
                         id=start_id + i,
                         text="10\n+ 10",

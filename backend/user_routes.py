@@ -18,7 +18,7 @@ from typing import Optional
 class UpdateDisplayNameRequest(BaseModel):
     display_name: Optional[str] = None
 
-from gamification import calculate_points, check_and_award_badges, update_streak
+from gamification import calculate_points, check_and_award_badges, update_streak, check_and_award_super_rewards
 from leaderboard_service import (
     update_leaderboard, update_weekly_leaderboard,
     get_overall_leaderboard, get_weekly_leaderboard
@@ -113,13 +113,14 @@ async def save_practice_session(
     db: Session = Depends(get_db)
 ):
     """Save a practice session with all attempts."""
-    # Calculate points
+    # Calculate points for mental math: 10 points per question attempted
     points_earned = calculate_points(
         correct_answers=session_data.correct_answers,
         total_questions=session_data.total_questions,
         time_taken=session_data.time_taken,
         difficulty_mode=session_data.difficulty_mode,
-        accuracy=session_data.accuracy
+        accuracy=session_data.accuracy,
+        is_mental_math=True  # Mental math practice
     )
     
     # Create practice session
@@ -154,10 +155,13 @@ async def save_practice_session(
     
     # Update user points and streak
     current_user.total_points += points_earned
-    update_streak(db, current_user)
+    update_streak(db, current_user, questions_practiced_today=session_data.total_questions)
     
     # Check for badges
     badges = check_and_award_badges(db, current_user, session)
+    
+    # Check for SUPER badge rewards
+    super_rewards = check_and_award_super_rewards(db, current_user)
     
     db.commit()
     db.refresh(session)

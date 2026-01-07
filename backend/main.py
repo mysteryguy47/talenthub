@@ -5,16 +5,22 @@ from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.exceptions import RequestValidationError
 from sqlalchemy.orm import Session
 from typing import List
+from datetime import datetime
 import json
 import hashlib
 import random
 import time
 
-from models import Paper, get_db, init_db
+from models import Paper, PaperAttempt, get_db, init_db
 from schemas import (
     PaperCreate, PaperResponse, PaperConfig, PreviewResponse,
     GeneratedBlock, BlockConfig
 )
+from user_schemas import PaperAttemptCreate, PaperAttemptResponse, PaperAttemptDetailResponse, PaperAttemptSubmit
+from auth import get_current_user
+from models import User
+from gamification import calculate_points, check_and_award_badges, update_streak, check_and_award_super_rewards
+from leaderboard_service import update_leaderboard, update_weekly_leaderboard
 from math_generator import generate_block
 from pdf_generator import generate_pdf
 from pdf_generator_v2 import generate_pdf_v2
@@ -312,4 +318,175 @@ async def download_paper_pdf(
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate PDF: {str(e)}")
+
+
+@app.post("/api/papers/attempt", response_model=PaperAttemptResponse)
+async def start_paper_attempt(
+    attempt_data: PaperAttemptCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Start a new paper attempt."""
+    # Calculate total questions
+    total_questions = sum(len(block.get("questions", [])) for block in attempt_data.generated_blocks)
+    
+    # Create paper attempt
+    paper_attempt = PaperAttempt(
+        user_id=current_user.id,
+        paper_title=attempt_data.paper_title,
+        paper_level=attempt_data.paper_level,
+        paper_config=attempt_data.paper_config,
+        generated_blocks=attempt_data.generated_blocks,
+        seed=attempt_data.seed,
+        total_questions=total_questions,
+        answers=attempt_data.answers or {}
+    )
+    db.add(paper_attempt)
+    db.commit()
+    db.refresh(paper_attempt)
+    
+    return PaperAttemptResponse.model_validate(paper_attempt)
+
+
+@app.put("/api/papers/attempt/{attempt_id}", response_model=PaperAttemptResponse)
+async def submit_paper_attempt(
+    attempt_id: int,
+    submit_data: PaperAttemptSubmit,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    answers = submit_data.answers
+    time_taken = submit_data.time_taken
+    """Submit answers for a paper attempt and calculate results."""
+    paper_attempt = db.query(PaperAttempt).filter(
+        PaperAttempt.id == attempt_id,
+        PaperAttempt.user_id == current_user.id
+    ).first()
+    
+    if not paper_attempt:
+        raise HTTPException(status_code=404, detail="Paper attempt not found")
+    
+    if paper_attempt.completed_at:
+        raise HTTPException(status_code=400, detail="Attempt already completed")
+    
+    # Calculate results
+    generated_blocks = paper_attempt.generated_blocks
+    correct_count = 0
+    wrong_count = 0
+    
+    # Flatten all questions from all blocks
+    all_questions = []
+    for block in generated_blocks:
+        for question in block.get("questions", []):
+            all_questions.append(question)
+    
+    # Check answers
+    for question in all_questions:
+        try:
+            question_id = question.get("id")
+            user_answer = answers.get(str(question_id)) or answers.get(question_id)
+            correct_answer = question.get("answer")
+            
+            if user_answer is not None and correct_answer is not None:
+                # Compare with tolerance for floating point
+                try:
+                    if abs(float(user_answer) - float(correct_answer)) < 0.01:
+                        correct_count += 1
+                    else:
+                        wrong_count += 1
+                except (ValueError, TypeError) as e:
+                    print(f"⚠️ [SUBMIT] Error comparing answers for question {question_id}: {e}")
+                    wrong_count += 1
+        except Exception as e:
+            print(f"⚠️ [SUBMIT] Error processing question: {e}")
+            continue
+    
+    # Calculate accuracy and score
+    total = paper_attempt.total_questions
+    accuracy = (correct_count / total * 100) if total > 0 else 0
+    score = correct_count
+    
+    # Calculate points for paper attempts: only correct answers count (marks * 10)
+    # Example: 39/50 = 390 points, 2/4 = 20 points
+    points_earned = calculate_points(
+        correct_answers=correct_count,
+        total_questions=total,
+        time_taken=time_taken,
+        difficulty_mode="custom",  # Papers are custom
+        accuracy=accuracy,
+        is_mental_math=False  # Paper attempt - only correct answers count
+    )
+    
+    # Update attempt
+    paper_attempt.answers = answers
+    paper_attempt.correct_answers = correct_count
+    paper_attempt.wrong_answers = wrong_count
+    paper_attempt.accuracy = accuracy
+    paper_attempt.score = score
+    paper_attempt.time_taken = time_taken
+    paper_attempt.points_earned = points_earned
+    paper_attempt.completed_at = datetime.utcnow()
+    
+    # Update user points (no streak update for paper attempts - only mental math counts)
+    current_user.total_points += points_earned
+    
+    # Check for SUPER badge rewards
+    super_rewards = check_and_award_super_rewards(db, current_user)
+    
+    # Check for badges (create a mock session for badge checking)
+    from models import PracticeSession
+    mock_session = PracticeSession(
+        user_id=current_user.id,
+        operation_type="paper",
+        difficulty_mode="custom",
+        total_questions=total,
+        correct_answers=correct_count,
+        wrong_answers=wrong_count,
+        accuracy=accuracy,
+        score=score,
+        time_taken=time_taken,
+        points_earned=points_earned
+    )
+    check_and_award_badges(db, current_user, mock_session)
+    
+    db.commit()
+    db.refresh(paper_attempt)
+    
+    # Update leaderboards
+    update_leaderboard(db)
+    update_weekly_leaderboard(db)
+    
+    return PaperAttemptResponse.model_validate(paper_attempt)
+
+
+@app.get("/api/papers/attempt/{attempt_id}", response_model=PaperAttemptDetailResponse)
+async def get_paper_attempt(
+    attempt_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get details of a paper attempt."""
+    paper_attempt = db.query(PaperAttempt).filter(
+        PaperAttempt.id == attempt_id,
+        PaperAttempt.user_id == current_user.id
+    ).first()
+    
+    if not paper_attempt:
+        raise HTTPException(status_code=404, detail="Paper attempt not found")
+    
+    return PaperAttemptDetailResponse.model_validate(paper_attempt)
+
+
+@app.get("/api/papers/attempts", response_model=List[PaperAttemptResponse])
+async def get_paper_attempts(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    limit: int = 20
+):
+    """Get user's paper attempt history."""
+    attempts = db.query(PaperAttempt).filter(
+        PaperAttempt.user_id == current_user.id
+    ).order_by(PaperAttempt.started_at.desc()).limit(limit).all()
+    
+    return [PaperAttemptResponse.model_validate(attempt) for attempt in attempts]
 

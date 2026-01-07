@@ -114,3 +114,42 @@ class AdminStats(BaseModel):
     active_students_today: int
     top_students: List[LeaderboardEntry]
 
+
+class PaperAttemptCreate(BaseModel):
+    paper_title: str
+    paper_level: str
+    paper_config: dict
+    generated_blocks: List[dict]
+    seed: int
+    answers: Optional[dict] = None  # {question_id: answer}
+    time_taken: Optional[float] = None
+
+
+class PaperAttemptResponse(BaseModel):
+    id: int
+    paper_title: str
+    paper_level: str
+    total_questions: int
+    correct_answers: int
+    wrong_answers: int
+    accuracy: float
+    score: int
+    time_taken: Optional[float]
+    points_earned: int
+    started_at: datetime
+    completed_at: Optional[datetime]
+    
+    model_config = {"from_attributes": True}
+
+
+class PaperAttemptDetailResponse(PaperAttemptResponse):
+    paper_config: dict
+    generated_blocks: List[dict]
+    seed: int
+    answers: Optional[dict]
+
+
+class PaperAttemptSubmit(BaseModel):
+    answers: dict
+    time_taken: float
+

@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { getStudentStats, getOverallLeaderboard, getWeeklyLeaderboard, getPracticeSessionDetail, StudentStats, LeaderboardEntry, PracticeSessionDetail } from "../lib/userApi";
-import { Trophy, Target, Zap, Award, CheckCircle2, XCircle, BarChart3, History, X, Eye, ChevronDown, ChevronUp } from "lucide-react";
+import { getPaperAttempts, PaperAttempt } from "../lib/api";
+import { Trophy, Target, Zap, Award, CheckCircle2, XCircle, BarChart3, History, X, Eye, ChevronDown, ChevronUp, FileText, Gift } from "lucide-react";
 import { Link } from "wouter";
+import RewardsExplanation from "../components/RewardsExplanation";
 
 export default function StudentDashboard() {
   const { user } = useAuth();
@@ -14,6 +16,9 @@ export default function StudentDashboard() {
   const [selectedSession, setSelectedSession] = useState<PracticeSessionDetail | null>(null);
   const [expandedSession, setExpandedSession] = useState<number | null>(null);
   const [showAllSessions, setShowAllSessions] = useState(false);
+  const [paperAttempts, setPaperAttempts] = useState<PaperAttempt[]>([]);
+  const [selectedPaperAttempt, setSelectedPaperAttempt] = useState<PaperAttempt | null>(null);
+  const [showRewardsExplanation, setShowRewardsExplanation] = useState(false);
 
   const loadData = async (isInitialLoad: boolean = false) => {
     // Only show loading screen on initial load, not on refreshes
@@ -83,6 +88,18 @@ export default function StudentDashboard() {
         // Only clear on initial load
         if (isInitialLoad) {
           setWeeklyLeaderboard([]);
+        }
+      }
+      
+      // Load paper attempts
+      try {
+        const attempts = await getPaperAttempts();
+        console.log("✅ [DASHBOARD] Paper attempts loaded:", attempts.length, "attempts");
+        setPaperAttempts(attempts);
+      } catch (attemptsError: any) {
+        console.error("❌ [DASHBOARD] Failed to load paper attempts:", attemptsError);
+        if (isInitialLoad) {
+          setPaperAttempts([]);
         }
       }
       
@@ -322,6 +339,43 @@ export default function StudentDashboard() {
           </div>
         </div>
 
+        {/* Rewards System Card */}
+        <div className="mb-8 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 rounded-2xl p-6 shadow-2xl text-white relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-indigo-700/50 to-purple-700/50"></div>
+          <div className="relative z-10">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                    <Gift className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold">Unlock Amazing Rewards!</h2>
+                    <p className="text-white/90 text-sm">Earn points, unlock chocolates, SUPER badges, and more!</p>
+                  </div>
+                </div>
+                <div className="mt-4 flex items-center gap-4 flex-wrap">
+                  <div className="bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2">
+                    <p className="text-xs text-white/80 mb-1">Your Points</p>
+                    <p className="text-2xl font-bold">{stats.total_points.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2">
+                    <p className="text-xs text-white/80 mb-1">Daily Streak</p>
+                    <p className="text-2xl font-bold">{stats.current_streak} days</p>
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowRewardsExplanation(true)}
+                className="px-6 py-3 bg-white text-indigo-600 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center gap-2"
+              >
+                <Gift className="w-5 h-5" />
+                Learn More
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Recent Practice Sessions */}
         <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-slate-200/50 mb-8">
           <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
@@ -407,6 +461,69 @@ export default function StudentDashboard() {
             </div>
           )}
         </div>
+
+        {/* Paper Attempts */}
+        {paperAttempts.length > 0 && (
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-slate-200/50 mb-8">
+            <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+              <FileText className="w-6 h-6 text-indigo-600" />
+              Paper Attempts
+            </h2>
+            <div className="space-y-3">
+              {paperAttempts.slice(0, 5).map((attempt) => (
+                <div
+                  key={attempt.id}
+                  className="bg-slate-50 hover:bg-slate-100 rounded-xl p-4 border border-slate-200 transition-all cursor-pointer"
+                  onClick={() => setSelectedPaperAttempt(selectedPaperAttempt?.id === attempt.id ? null : attempt)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="font-semibold text-slate-900">{attempt.paper_title}</span>
+                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-700">
+                          {attempt.paper_level}
+                        </span>
+                        <span className="text-sm text-slate-500">{formatDate(attempt.started_at)}</span>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm">
+                        <span className="text-slate-600">
+                          <span className="font-semibold text-green-600">{attempt.correct_answers}</span> correct / <span className="font-semibold text-red-600">{attempt.wrong_answers}</span> wrong
+                        </span>
+                        <span className="text-slate-600">
+                          Accuracy: <span className="font-semibold">{attempt.accuracy.toFixed(1)}%</span>
+                        </span>
+                        {attempt.time_taken !== null && attempt.time_taken !== undefined && (
+                          <span className="text-slate-600">
+                            Time: <span className="font-semibold">{formatTime(attempt.time_taken)}</span>
+                          </span>
+                        )}
+                        <span className="text-slate-600">
+                          Points: <span className="font-semibold text-yellow-600">{attempt.points_earned}</span>
+                        </span>
+                      </div>
+                    </div>
+                    <div className="ml-4">
+                      {attempt.completed_at ? (
+                        <CheckCircle2 className="w-6 h-6 text-green-600" />
+                      ) : (
+                        <div className="w-6 h-6 border-2 border-slate-300 rounded-full"></div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {paperAttempts.length > 5 && (
+              <div className="mt-4 text-center">
+                <Link href="/create">
+                  <button className="text-indigo-600 hover:text-indigo-700 font-semibold">
+                    View All Paper Attempts →
+                  </button>
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Leaderboard */}
@@ -639,6 +756,13 @@ export default function StudentDashboard() {
           </div>
         </div>
       )}
+
+      {/* Rewards Explanation Modal */}
+      <RewardsExplanation
+        isOpen={showRewardsExplanation}
+        onClose={() => setShowRewardsExplanation(false)}
+        currentPoints={stats?.total_points || 0}
+      />
     </div>
   );
 }

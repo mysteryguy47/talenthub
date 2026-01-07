@@ -1,19 +1,32 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { ChevronDown, Sparkles, BookOpen, User, LogOut, BarChart3, Shield, UserCircle, Settings, ArrowRight } from "lucide-react";
+import { ChevronDown, Sparkles, BookOpen, User, LogOut, BarChart3, Shield, UserCircle, Settings, ArrowRight, GraduationCap, ChevronRight } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 
 export default function Header() {
-  const [abacusOpen, setAbacusOpen] = useState(false);
+  const [coursesOpen, setCoursesOpen] = useState(false);
+  const [createPaperOpen, setCreatePaperOpen] = useState(false);
+  const [abacusSubmenuOpen, setAbacusSubmenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [location, setLocation] = useLocation();
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const coursesDropdownRef = useRef<HTMLDivElement>(null);
+  const createPaperDropdownRef = useRef<HTMLDivElement>(null);
+  const abacusSubmenuRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const coursesTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const createPaperTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const abacusSubmenuTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const userMenuTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { user, logout, isAuthenticated, isAdmin } = useAuth();
 
   const isActive = (path: string) => location === path || location.startsWith(path + "/");
+  
+  // Check if we're on a courses page
+  const isCoursesActive = location.startsWith("/courses/");
+  // Check if we're on a create paper page
+  const isCreatePaperActive = location.startsWith("/create") || location.startsWith("/vedic-maths");
+  // Check if we're on mental math page
+  const isMentalMathActive = location.startsWith("/mental");
 
   // Handle logo click - scroll to hero section
   const handleLogoClick = (e: React.MouseEvent) => {
@@ -31,31 +44,89 @@ export default function Header() {
     }
   };
 
-  // Handle mouse enter with delay
-  const handleMouseEnter = () => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
+  // Handle courses dropdown
+  const handleCoursesMouseEnter = () => {
+    if (coursesTimeoutRef.current) {
+      clearTimeout(coursesTimeoutRef.current);
+      coursesTimeoutRef.current = null;
     }
-    setAbacusOpen(true);
+    setCoursesOpen(true);
   };
 
-  // Handle mouse leave with delay
-  const handleMouseLeave = () => {
-    timeoutRef.current = setTimeout(() => {
-      setAbacusOpen(false);
-    }, 200); // 200ms delay before closing
+  const handleCoursesMouseLeave = () => {
+    coursesTimeoutRef.current = setTimeout(() => {
+      setCoursesOpen(false);
+    }, 200);
+  };
+
+  // Handle create paper dropdown
+  const handleCreatePaperMouseEnter = () => {
+    if (createPaperTimeoutRef.current) {
+      clearTimeout(createPaperTimeoutRef.current);
+      createPaperTimeoutRef.current = null;
+    }
+    setCreatePaperOpen(true);
+  };
+
+  const handleCreatePaperMouseLeave = () => {
+    createPaperTimeoutRef.current = setTimeout(() => {
+      setCreatePaperOpen(false);
+      setAbacusSubmenuOpen(false); // Close submenu when parent closes
+    }, 400);
+  };
+
+  // Handle abacus item hover - opens submenu
+  const handleAbacusItemMouseEnter = () => {
+    // Clear any timeout that would close the submenu
+    if (abacusSubmenuTimeoutRef.current) {
+      clearTimeout(abacusSubmenuTimeoutRef.current);
+      abacusSubmenuTimeoutRef.current = null;
+    }
+    // Keep parent dropdown open
+    if (createPaperTimeoutRef.current) {
+      clearTimeout(createPaperTimeoutRef.current);
+      createPaperTimeoutRef.current = null;
+    }
+    setCreatePaperOpen(true);
+    setAbacusSubmenuOpen(true);
+  };
+
+  // Handle abacus item mouse leave - delay closing
+  const handleAbacusItemMouseLeave = () => {
+    abacusSubmenuTimeoutRef.current = setTimeout(() => {
+      setAbacusSubmenuOpen(false);
+    }, 400);
+  };
+
+  // Handle abacus submenu hover - keeps it open
+  const handleAbacusSubmenuMouseEnter = () => {
+    // Clear timeout when entering submenu
+    if (abacusSubmenuTimeoutRef.current) {
+      clearTimeout(abacusSubmenuTimeoutRef.current);
+      abacusSubmenuTimeoutRef.current = null;
+    }
+    // Keep parent dropdown open
+    if (createPaperTimeoutRef.current) {
+      clearTimeout(createPaperTimeoutRef.current);
+      createPaperTimeoutRef.current = null;
+    }
+    setCreatePaperOpen(true);
+    setAbacusSubmenuOpen(true);
+  };
+
+  const handleAbacusSubmenuMouseLeave = () => {
+    abacusSubmenuTimeoutRef.current = setTimeout(() => {
+      setAbacusSubmenuOpen(false);
+    }, 400);
   };
 
   // Cleanup timeouts on unmount
   useEffect(() => {
     return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-      if (userMenuTimeoutRef.current) {
-        clearTimeout(userMenuTimeoutRef.current);
-      }
+      if (coursesTimeoutRef.current) clearTimeout(coursesTimeoutRef.current);
+      if (createPaperTimeoutRef.current) clearTimeout(createPaperTimeoutRef.current);
+      if (abacusSubmenuTimeoutRef.current) clearTimeout(abacusSubmenuTimeoutRef.current);
+      if (userMenuTimeoutRef.current) clearTimeout(userMenuTimeoutRef.current);
     };
   }, []);
 
@@ -71,7 +142,7 @@ export default function Header() {
           >
             <div className="relative">
               <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 flex items-center justify-center shadow-xl group-hover:shadow-2xl group-hover:shadow-indigo-500/50 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
-                <Sparkles className="w-8 h-8 text-white" />
+                <GraduationCap className="w-8 h-8 text-white" />
               </div>
               <div className="absolute -inset-1 bg-gradient-to-br from-blue-400 to-purple-400 rounded-2xl opacity-0 group-hover:opacity-20 blur-lg transition-opacity duration-300"></div>
             </div>
@@ -85,69 +156,72 @@ export default function Header() {
 
           {/* Navigation */}
           <nav className="flex items-center gap-2">
-            {/* Abacus Dropdown */}
+            {/* Courses Dropdown */}
             <div 
-              ref={dropdownRef}
+              ref={coursesDropdownRef}
               className="relative"
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
+              onMouseEnter={handleCoursesMouseEnter}
+              onMouseLeave={handleCoursesMouseLeave}
             >
-              <button className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-slate-700 hover:text-indigo-600 transition-all duration-200 rounded-xl hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 border border-transparent hover:border-indigo-200/50">
+              <button className={`flex items-center gap-2 px-5 py-2.5 text-sm font-bold transition-all duration-200 rounded-xl border border-transparent ${
+                isCoursesActive
+                  ? "text-indigo-600 bg-gradient-to-r from-indigo-50 to-blue-50 border-indigo-200/50 underline decoration-2 underline-offset-4"
+                  : "text-slate-700 hover:text-indigo-600 hover:bg-indigo-50/50"
+              }`}>
                 <BookOpen className="w-4 h-4" />
-                Abacus
-                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${abacusOpen ? 'rotate-180' : ''}`} />
+                Courses
+                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${coursesOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {/* Dropdown Menu */}
-              {abacusOpen && (
+              {coursesOpen && (
                 <div 
-                  className="absolute top-full left-0 mt-2 w-64 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200/50 overflow-hidden animate-fade-in"
-                  onMouseEnter={handleMouseEnter}
-                  onMouseLeave={handleMouseLeave}
+                  className="absolute top-full left-0 mt-2 w-64 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200/50 overflow-hidden animate-fade-in z-50"
+                  onMouseEnter={handleCoursesMouseEnter}
+                  onMouseLeave={handleCoursesMouseLeave}
                 >
                   <div className="py-2">
-                    {/* Junior - Active */}
-                    <Link href="/create/junior">
-                      <div className={`px-4 py-3 text-sm font-medium transition-colors flex items-center gap-2 border-b border-gray-100 ${
-                        isActive("/create/junior")
+                    <Link href="/courses/abacus">
+                      <div className={`px-4 py-3 text-sm font-medium transition-colors flex items-center gap-2 ${
+                        location === "/courses/abacus"
                           ? "bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-600 border-l-4 border-blue-600"
                           : "text-gray-700 hover:bg-gray-50 hover:text-blue-600"
                       }`}>
-                        <div className={`w-2 h-2 rounded-full ${isActive("/create/junior") ? "bg-blue-600" : "bg-gray-300"}`}></div>
-                        <span>Junior</span>
-                        {isActive("/create/junior") && (
-                          <span className="ml-auto text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-semibold">Active</span>
-                        )}
+                        <div className={`w-2 h-2 rounded-full ${location === "/courses/abacus" ? "bg-blue-600" : "bg-gray-300"}`}></div>
+                        <span>Abacus</span>
                       </div>
                     </Link>
 
-                    {/* Basic - Active */}
-                    <Link href="/create/basic">
+                    <Link href="/courses/vedic-maths">
                       <div className={`px-4 py-3 text-sm font-medium transition-colors flex items-center gap-2 ${
-                        isActive("/create/basic") || (location === "/create" && !location.includes("advanced"))
-                          ? "bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-600 border-l-4 border-blue-600"
-                          : "text-gray-700 hover:bg-gray-50 hover:text-blue-600"
+                        location === "/courses/vedic-maths"
+                          ? "bg-gradient-to-r from-purple-50 to-pink-50 text-purple-600 border-l-4 border-purple-600"
+                          : "text-gray-700 hover:bg-gray-50 hover:text-purple-600"
                       }`}>
-                        <div className={`w-2 h-2 rounded-full ${isActive("/create/basic") || (location === "/create" && !location.includes("advanced")) ? "bg-blue-600" : "bg-gray-300"}`}></div>
-                        <span>Basic</span>
-                        {(isActive("/create/basic") || (location === "/create" && !location.includes("advanced"))) && (
-                          <span className="ml-auto text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-semibold">Active</span>
-                        )}
+                        <div className={`w-2 h-2 rounded-full ${location === "/courses/vedic-maths" ? "bg-purple-600" : "bg-gray-300"}`}></div>
+                        <span>Vedic Maths</span>
                       </div>
                     </Link>
 
-                    {/* Advanced - Active */}
-                    <Link href="/create/advanced">
+                    <Link href="/courses/handwriting">
                       <div className={`px-4 py-3 text-sm font-medium transition-colors flex items-center gap-2 ${
-                        isActive("/create/advanced")
-                          ? "bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-600 border-l-4 border-blue-600"
-                          : "text-gray-700 hover:bg-gray-50 hover:text-blue-600"
+                        location === "/courses/handwriting"
+                          ? "bg-gradient-to-r from-green-50 to-emerald-50 text-green-600 border-l-4 border-green-600"
+                          : "text-gray-700 hover:bg-gray-50 hover:text-green-600"
                       }`}>
-                        <div className={`w-2 h-2 rounded-full ${isActive("/create/advanced") ? "bg-blue-600" : "bg-gray-300"}`}></div>
-                        <span>Advanced</span>
-                        {isActive("/create/advanced") && (
-                          <span className="ml-auto text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-semibold">Active</span>
-                        )}
+                        <div className={`w-2 h-2 rounded-full ${location === "/courses/handwriting" ? "bg-green-600" : "bg-gray-300"}`}></div>
+                        <span>Handwriting</span>
+                      </div>
+                    </Link>
+
+                    <Link href="/courses/stem">
+                      <div className={`px-4 py-3 text-sm font-medium transition-colors flex items-center gap-2 ${
+                        location === "/courses/stem"
+                          ? "bg-gradient-to-r from-orange-50 to-amber-50 text-orange-600 border-l-4 border-orange-600"
+                          : "text-gray-700 hover:bg-gray-50 hover:text-orange-600"
+                      }`}>
+                        <div className={`w-2 h-2 rounded-full ${location === "/courses/stem" ? "bg-orange-600" : "bg-gray-300"}`}></div>
+                        <span>STEM</span>
                       </div>
                     </Link>
                   </div>
@@ -155,23 +229,119 @@ export default function Header() {
               )}
             </div>
 
-            {/* Vedic Maths Link */}
-            <Link href="/vedic-maths/level-1">
+            {/* Create Paper Dropdown */}
+            <div 
+              ref={createPaperDropdownRef}
+              className="relative"
+              onMouseEnter={handleCreatePaperMouseEnter}
+              onMouseLeave={handleCreatePaperMouseLeave}
+            >
               <button className={`flex items-center gap-2 px-5 py-2.5 text-sm font-bold transition-all duration-200 rounded-xl border border-transparent ${
-                isActive("/vedic-maths")
-                  ? "text-indigo-600 bg-gradient-to-r from-indigo-50 to-blue-50 border-indigo-200/50"
+                isCreatePaperActive
+                  ? "text-indigo-600 bg-gradient-to-r from-indigo-50 to-blue-50 border-indigo-200/50 underline decoration-2 underline-offset-4"
                   : "text-slate-700 hover:text-indigo-600 hover:bg-indigo-50/50"
               }`}>
-                <BookOpen className="w-4 h-4" />
-                Vedic Maths
+                <Sparkles className="w-4 h-4" />
+                Create Paper
+                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${createPaperOpen ? 'rotate-180' : ''}`} />
               </button>
-            </Link>
+
+              {/* Dropdown Menu */}
+              {createPaperOpen && (
+                <div 
+                  className="absolute top-full left-0 mt-2 w-64 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200/50 overflow-visible animate-fade-in z-50"
+                  onMouseEnter={handleCreatePaperMouseEnter}
+                  onMouseLeave={handleCreatePaperMouseLeave}
+                >
+                  <div className="py-2 overflow-visible">
+                    {/* Abacus with submenu */}
+                    <div 
+                      ref={abacusSubmenuRef}
+                      className="relative"
+                      onMouseEnter={handleAbacusItemMouseEnter}
+                      onMouseLeave={handleAbacusItemMouseLeave}
+                    >
+                      <div 
+                        className={`px-4 py-3 text-sm font-medium transition-colors flex items-center justify-between ${
+                          location.startsWith("/create") && !location.startsWith("/vedic-maths")
+                            ? "bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-600"
+                            : "text-gray-700 hover:bg-gray-50 hover:text-blue-600"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${location.startsWith("/create") && !location.startsWith("/vedic-maths") ? "bg-blue-600" : "bg-gray-300"}`}></div>
+                          <span>Abacus</span>
+                        </div>
+                        <ChevronRight className={`w-4 h-4 transition-transform duration-200 ${abacusSubmenuOpen ? 'rotate-90' : ''}`} />
+                      </div>
+
+                      {/* Abacus Submenu */}
+                      {abacusSubmenuOpen && (
+                        <div 
+                          className="absolute left-full top-0 ml-1 w-56 bg-white/95 backdrop-blur-xl rounded-xl shadow-xl border border-slate-200/50 overflow-hidden z-[60]"
+                          onMouseEnter={handleAbacusSubmenuMouseEnter}
+                          onMouseLeave={handleAbacusSubmenuMouseLeave}
+                          style={{ minWidth: '14rem' }}
+                        >
+                          <div className="py-2">
+                            <Link href="/create/junior">
+                              <div className={`px-4 py-2.5 text-sm font-medium transition-colors flex items-center gap-2 border-b border-gray-100 ${
+                                isActive("/create/junior")
+                                  ? "bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-600 border-l-4 border-blue-600"
+                                  : "text-gray-700 hover:bg-gray-50 hover:text-blue-600"
+                              }`}>
+                                <div className={`w-2 h-2 rounded-full ${isActive("/create/junior") ? "bg-blue-600" : "bg-gray-300"}`}></div>
+                                <span>Junior</span>
+                              </div>
+                            </Link>
+
+                            <Link href="/create/basic">
+                              <div className={`px-4 py-2.5 text-sm font-medium transition-colors flex items-center gap-2 border-b border-gray-100 ${
+                                isActive("/create/basic") || (location === "/create" && !location.includes("advanced") && !location.includes("junior"))
+                                  ? "bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-600 border-l-4 border-blue-600"
+                                  : "text-gray-700 hover:bg-gray-50 hover:text-blue-600"
+                              }`}>
+                                <div className={`w-2 h-2 rounded-full ${isActive("/create/basic") || (location === "/create" && !location.includes("advanced") && !location.includes("junior")) ? "bg-blue-600" : "bg-gray-300"}`}></div>
+                                <span>Basic</span>
+                              </div>
+                            </Link>
+
+                            <Link href="/create/advanced">
+                              <div className={`px-4 py-2.5 text-sm font-medium transition-colors flex items-center gap-2 ${
+                                isActive("/create/advanced")
+                                  ? "bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-600 border-l-4 border-blue-600"
+                                  : "text-gray-700 hover:bg-gray-50 hover:text-blue-600"
+                              }`}>
+                                <div className={`w-2 h-2 rounded-full ${isActive("/create/advanced") ? "bg-blue-600" : "bg-gray-300"}`}></div>
+                                <span>Advanced</span>
+                              </div>
+                            </Link>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Vedic Maths */}
+                    <Link href="/vedic-maths/level-1">
+                      <div className={`px-4 py-3 text-sm font-medium transition-colors flex items-center gap-2 ${
+                        location.startsWith("/vedic-maths")
+                          ? "bg-gradient-to-r from-purple-50 to-pink-50 text-purple-600 border-l-4 border-purple-600"
+                          : "text-gray-700 hover:bg-gray-50 hover:text-purple-600"
+                      }`}>
+                        <div className={`w-2 h-2 rounded-full ${location.startsWith("/vedic-maths") ? "bg-purple-600" : "bg-gray-300"}`}></div>
+                        <span>Vedic Maths</span>
+                      </div>
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Mental Math Link */}
             <Link href="/mental">
               <button className={`flex items-center gap-2 px-5 py-2.5 text-sm font-bold transition-all duration-200 rounded-xl border border-transparent ${
-                isActive("/mental")
-                  ? "text-purple-600 bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200/50"
+                isMentalMathActive
+                  ? "text-purple-600 bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200/50 underline decoration-2 underline-offset-4"
                   : "text-slate-700 hover:text-purple-600 hover:bg-purple-50/50"
               }`}>
                 <Sparkles className="w-4 h-4" />
@@ -272,12 +442,10 @@ export default function Header() {
               </div>
             ) : (
               <Link href="/login">
-                <button className="group flex items-center gap-2 px-6 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-xl shadow-lg hover:shadow-xl hover:shadow-purple-500/50 transform hover:-translate-y-0.5 transition-all duration-300">
+                <button className="group flex items-center gap-2 px-6 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-xl shadow-lg hover:shadow-xl hover:shadow-purple-500/50 transform hover:-translate-y-0.5 transition-all duration-300 overflow-visible">
                   <UserCircle className="w-4 h-4" />
                   Sign In
-                  <span className="w-0 group-hover:w-2 transition-all duration-300 overflow-hidden">
-                    <ArrowRight className="w-4 h-4" />
-                  </span>
+                  <ArrowRight className="w-4 h-4 translate-x-0 group-hover:translate-x-1 group-hover:scale-110 transition-all duration-300 ease-out" />
                 </button>
               </Link>
             )}

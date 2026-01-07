@@ -14,7 +14,27 @@ QuestionType = Literal[
     "vedic_multiply_by_12_19", "vedic_special_products_base_100", "vedic_special_products_base_50",
     "vedic_multiply_by_21_91", "vedic_addition", "vedic_multiply_by_2", "vedic_multiply_by_4",
     "vedic_divide_by_2", "vedic_divide_by_4", "vedic_divide_single_digit", "vedic_multiply_by_6",
-    "vedic_divide_by_11", "vedic_squares_base_10", "vedic_squares_base_100", "vedic_squares_base_1000", "vedic_tables"
+    "vedic_divide_by_11", "vedic_squares_base_10", "vedic_squares_base_100", "vedic_squares_base_1000", "vedic_tables",
+    # Vedic Maths Level 2 operations
+    "vedic_fun_with_9", "vedic_fun_with_5", "vedic_fun_with_10", "vedic_multiply_by_1001",
+    "vedic_multiply_by_5_25_125", "vedic_divide_by_5_25_125", "vedic_multiply_by_5_50_500", "vedic_divide_by_5_50_500",
+    "vedic_vinculum", "vedic_devinculum", "vedic_subtraction_powers_of_10", "vedic_special_products_base_1000",
+    "vedic_special_products_cross_multiply", "vedic_special_products_cross_base", "vedic_special_products_cross_base_50",
+    "vedic_duplex", "vedic_squares_duplex", "vedic_divide_with_remainder", "vedic_divide_by_9s_repetition",
+    "vedic_divide_by_11s_repetition", "vedic_divide_by_7", "vedic_dropping_10_method",
+    # Vedic Maths Level 3 operations
+    "vedic_multiply_by_111_999", "vedic_multiply_by_102_109", "vedic_multiply_by_112_119", "vedic_multiplication",
+    "vedic_mix_multiplication", "vedic_combined_operation", "vedic_fraction_simplification", "vedic_fraction_addition",
+    "vedic_fraction_subtraction", "vedic_squares_level3", "vedic_percentage_level3", "vedic_squares_addition",
+    "vedic_squares_subtraction", "vedic_squares_deviation", "vedic_cubes", "vedic_check_divisibility",
+    "vedic_missing_numbers", "vedic_box_multiply", "vedic_multiply_by_10001", "vedic_duplex_level3", "vedic_squares_large",
+    # Vedic Maths Level 4 operations
+    "vedic_multiplication_level4", "vedic_multiply_by_111_999_level4", "vedic_decimal_add_sub", "vedic_fun_with_5_level4",
+    "vedic_fun_with_10_level4", "vedic_find_x", "vedic_hcf", "vedic_lcm_level4", "vedic_bar_add_sub",
+    "vedic_fraction_multiplication", "vedic_fraction_division", "vedic_check_divisibility_level4",
+    "vedic_division_without_remainder", "vedic_division_with_remainder", "vedic_divide_by_11_99",
+    "vedic_division_9_8_7_6", "vedic_division_91_121", "vedic_digital_sum", "vedic_cubes_base_method",
+    "vedic_check_perfect_cube", "vedic_cube_root_level4", "vedic_bodmas", "vedic_square_root_level4", "vedic_magic_square"
 ]
 PaperLevel = Literal["Custom", "Junior", "AB-1", "AB-2", "AB-3", "AB-4", "AB-5", "AB-6", "AB-7", "AB-8", "AB-9", "AB-10", "Advanced", "Vedic-Level-1", "Vedic-Level-2", "Vedic-Level-3", "Vedic-Level-4"]
 
@@ -47,6 +67,23 @@ class Constraints(BaseModel):
     multiplierRange: Optional[int] = Field(default=None, ge=21, le=91)  # For multiply by 21-91
     divisor: Optional[int] = Field(default=None, ge=2, le=9)  # For divide by single digit
     tableNumber: Optional[int] = Field(default=None, ge=1, le=99)  # Updated min to 1 for tables
+    # For Vedic Maths Level 2 operations
+    funWith9Case: Optional[str] = Field(default=None)  # "equal", "less_than", "greater_than", "mix" for Fun with 9
+    divideBy9sCase: Optional[str] = Field(default=None)  # "equal", "less_than", "mix" for Divide by 9's
+    divideBy11sCase: Optional[str] = Field(default=None)  # "equal", "less_than", "mix" for Divide by 11's
+    powerOf10: Optional[int] = Field(default=None)  # For subtraction from powers of 10 (100, 1000, etc.)
+    # For Vedic Maths Level 3 operations
+    multiplicationCase: Optional[str] = Field(default=None)  # "2x2", "3x2", "4x2", "3x3", "4x3", "4x4" for vedic_multiplication
+    fractionCase: Optional[str] = Field(default=None)  # "direct", "different_denominator", "whole", "mix" for fraction operations
+    divisorCheck: Optional[int] = Field(default=None)  # For check divisibility: 2,3,4,5,6,8,9,10
+    # For Vedic Maths Level 4 operations
+    funWith5Case: Optional[str] = Field(default=None)  # "decimal", "triple", "mix" for Fun with 5 Level 4
+    funWith10Case: Optional[str] = Field(default=None)  # "decimal", "triple", "mix" for Fun with 10 Level 4
+    divisibilityCase: Optional[str] = Field(default=None)  # "by_7", "by_11", "random" for check divisibility Level 4
+    division9_8_7_6Case: Optional[str] = Field(default=None)  # "9", "8", "7", "6", "mix" for Division (9, 8, 7, 6)
+    division91_121Case: Optional[str] = Field(default=None)  # "91", "121", "mix" for Division (91, 121)
+    bodmasDifficulty: Optional[str] = Field(default=None)  # "easy", "medium", "hard" for BODMAS
+    cubeRootDigits: Optional[int] = Field(default=None, ge=4, le=10)  # For cube root Level 4: 4-10 digits
 
 
 class BlockConfig(BaseModel):

@@ -42,6 +42,7 @@ class User(Base):
     
     # Relationships
     practice_sessions = relationship("PracticeSession", back_populates="user", cascade="all, delete-orphan")
+    paper_attempts = relationship("PaperAttempt", back_populates="user", cascade="all, delete-orphan")
     rewards = relationship("Reward", back_populates="user", cascade="all, delete-orphan")
 
 
@@ -105,6 +106,36 @@ class Reward(Base):
     
     __table_args__ = (
         Index('idx_user_badge', 'user_id', 'badge_type'),
+    )
+
+
+class PaperAttempt(Base):
+    """Paper attempt model to track attempts on custom generated papers."""
+    __tablename__ = "paper_attempts"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    paper_title = Column(String, nullable=False)
+    paper_level = Column(String, nullable=False)
+    paper_config = Column(JSON, nullable=False)  # Stores the full paper configuration
+    generated_blocks = Column(JSON, nullable=False)  # Stores the generated questions
+    seed = Column(Integer, nullable=False)  # Seed used for generation
+    total_questions = Column(Integer, nullable=False)
+    correct_answers = Column(Integer, default=0, nullable=False)
+    wrong_answers = Column(Integer, default=0, nullable=False)
+    accuracy = Column(Float, default=0.0, nullable=False)  # Percentage
+    score = Column(Integer, default=0, nullable=False)
+    time_taken = Column(Float, nullable=True)  # in seconds, null if not completed
+    points_earned = Column(Integer, default=0, nullable=False)
+    answers = Column(JSON, nullable=True)  # Stores user answers: {question_id: answer}
+    started_at = Column(DateTime, default=datetime.utcnow)
+    completed_at = Column(DateTime, nullable=True)
+    
+    # Relationships
+    user = relationship("User", back_populates="paper_attempts")
+    
+    __table_args__ = (
+        Index('idx_paper_user_created', 'user_id', 'started_at'),
     )
 
 

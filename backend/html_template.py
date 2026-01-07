@@ -141,8 +141,9 @@ def generate_html(config: PaperConfig, generated_blocks: List[GeneratedBlock],
         }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
-            font-size: 10pt;
+            font-family: 'Georgia', 'Times New Roman', serif;
+            font-size: 11pt;
+            font-weight: bold;
             line-height: 1.3;
             color: #1F2937;
             background: white;  /* White PDF background */
@@ -211,18 +212,7 @@ def generate_html(config: PaperConfig, generated_blocks: List[GeneratedBlock],
             background: transparent;  /* Make transparent so watermark shows through */
         }
         
-        /* Page box border - using fixed positioning to cover entire page */
-        .page-border {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border: 1pt solid #000000;
-            pointer-events: none;
-            z-index: 999;
-            box-sizing: border-box;
-        }
+        /* Page box border - removed */
         
         .section-title {
             font-size: 12pt;
@@ -240,28 +230,60 @@ def generate_html(config: PaperConfig, generated_blocks: List[GeneratedBlock],
         }
         
         .vertical-questions-table td {
-            border: 0.5pt solid #E5E7EB;
+            border: 1pt solid #000000;
             padding: 1mm;
             background: transparent;  /* Transparent so watermark shows through */
+            font-weight: bold;
         }
         
         .sno-cell {
             width: 10%;
-            vertical-align: top;
+            vertical-align: middle;
+            text-align: center;
         }
         
         .operand-cell {
             width: 10%;
-            text-align: right;
+            text-align: center;
             vertical-align: top;
+            padding: 1mm;
+            overflow: hidden;
         }
         
         .operand-content {
-            font-family: 'Courier New', monospace;
-            font-size: 10pt;
+            font-family: 'Georgia', 'Times New Roman', serif;
+            font-size: 11pt;
             font-weight: bold;
             color: #1F2937;
             line-height: 1.2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+        
+        .operand-wrapper {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            max-width: 100%;
+            justify-content: flex-end;
+        }
+        
+        .operator-wrapper {
+            flex-shrink: 0;
+            margin-right: 2mm;
+            width: 6mm;
+            text-align: left;
+            display: block;
+        }
+        
+        .number-wrapper {
+            flex-shrink: 0;
+            text-align: right;
+            min-width: 18mm;
+            max-width: 30mm;
+            overflow: visible;
         }
         
         .line-cell {
@@ -271,29 +293,34 @@ def generate_html(config: PaperConfig, generated_blocks: List[GeneratedBlock],
         
         .answer-cell {
             width: 10%;
-            text-align: right;
+            text-align: center;
             vertical-align: top;
-            min-height: 1.2rem;
+            min-height: 7.5mm;
+            height: 7.5mm;
+            padding-top: 2mm;
+            padding-bottom: 2mm;
         }
         
         .answer-value {
-            font-family: 'Courier New', monospace;
-            font-size: 10pt;
+            font-family: 'Georgia', 'Times New Roman', serif;
+            font-size: 11pt;
             font-weight: bold;
             color: #4B5563;
+            text-align: center;
         }
         
         .question-number {
             font-weight: bold;
-            font-size: 11pt;
+            font-size: 12pt;
             color: #1E40AF;
+            text-align: center;
         }
         
         .operator {
             font-weight: bold;
-            font-size: 10pt;
+            font-size: 11pt;
             color: #2563EB;
-            margin-right: 1mm;
+            margin-right: 2mm;
         }
         
         .question-line {
@@ -313,39 +340,48 @@ def generate_html(config: PaperConfig, generated_blocks: List[GeneratedBlock],
         .question-horizontal {
             width: 100%;
             border-collapse: collapse;
-            border: 0.5pt solid #E5E7EB;
+            border: 1pt solid #000000;
             background: transparent;  /* Transparent so watermark shows through */
+            table-layout: auto;
         }
         
         .question-horizontal td {
             padding: 1.5mm;
             vertical-align: top;
+            font-weight: bold;
         }
         
         .serial-col {
             width: 12mm;
-            border-right: 0.5pt solid #E5E7EB;
+            border-right: 1pt solid #000000;
+            text-align: center;
+            vertical-align: middle;
+            white-space: nowrap;
         }
         
         .question-col {
-            border-right: 0.5pt solid #E5E7EB;
+            border-right: 1pt solid #000000;
+            white-space: nowrap;
+            width: auto;
         }
         
         .answer-col {
-            width: 60mm;
+            width: auto;
             text-align: right;
+            white-space: nowrap;
         }
         
         .question-text {
-            font-family: 'Courier New', monospace;
-            font-size: 10pt;
+            font-family: 'Georgia', 'Times New Roman', serif;
+            font-size: 11pt;
             font-weight: bold;
             color: #1F2937;
-            word-break: break-all;
+            white-space: nowrap;
+            overflow: visible;
         }
         
         .answer-text {
-            font-family: 'Courier New', monospace;
+            font-family: 'Georgia', 'Times New Roman', serif;
             font-size: 10pt;
             font-weight: bold;
             color: #4B5563;
@@ -397,7 +433,6 @@ def generate_html(config: PaperConfig, generated_blocks: List[GeneratedBlock],
 </head>
 <body>
     <div class="watermark">TALENT HUB</div>
-    <div class="page-border"></div>
     <div class="container">"""
     
     if not answers_only:
@@ -476,9 +511,11 @@ def generate_html(config: PaperConfig, generated_blocks: List[GeneratedBlock],
                                     
                                     display_value = f"{(op / 10):.1f}" if is_decimal else format_number(op)
                                     html += f'<td class="operand-cell"><div class="operand-content">'
+                                    html += '<div class="operand-wrapper">'
                                     if operator:
-                                        html += f'<span class="operator">{operator}</span> '
-                                    html += f'{display_value}</div></td>'
+                                        html += f'<div class="operator-wrapper"><span class="operator">{operator}</span></div>'
+                                    html += f'<div class="number-wrapper">{display_value}</div>'
+                                    html += '</div></div></td>'
                                 else:
                                     html += '<td class="operand-cell"></td>'
                             # Fill remaining cells
@@ -508,17 +545,27 @@ def generate_html(config: PaperConfig, generated_blocks: List[GeneratedBlock],
                     html += '</tbody>'
                     html += '</table>'
             else:
-                # Render horizontal questions in pairs (2 columns)
+                # Render horizontal questions in columns (fill first column, then second)
                 horizontal_questions = [q for q in block.questions 
                                       if not getattr(q, 'isVertical', getattr(q, 'is_vertical', False))]
                 
-                # Process in pairs of 2
-                for pair_start in range(0, len(horizontal_questions), 2):
+                # Split into two columns - fill first column completely, then second
+                mid_point = (len(horizontal_questions) + 1) // 2  # Ceiling division
+                column1 = horizontal_questions[:mid_point]
+                column2 = horizontal_questions[mid_point:]
+                
+                # Render row by row
+                max_rows = max(len(column1), len(column2))
+                for row_idx in range(max_rows):
                     html += '<div class="horizontal-questions-container">'
-                    if pair_start < len(horizontal_questions):
-                        html += render_horizontal_question(horizontal_questions[pair_start], with_answers)
-                    if pair_start + 1 < len(horizontal_questions):
-                        html += render_horizontal_question(horizontal_questions[pair_start + 1], with_answers)
+                    # First column
+                    if row_idx < len(column1):
+                        html += render_horizontal_question(column1[row_idx], with_answers)
+                    else:
+                        html += '<div></div>'  # Empty cell for alignment
+                    # Second column
+                    if row_idx < len(column2):
+                        html += render_horizontal_question(column2[row_idx], with_answers)
                     else:
                         html += '<div></div>'  # Empty cell for alignment
                     html += '</div>'
@@ -528,7 +575,7 @@ def generate_html(config: PaperConfig, generated_blocks: List[GeneratedBlock],
         # Ending section
         html += '<div class="ending-section">'
         html += '<div class="ending-line"></div>'
-        html += '<div class="ending-text"><span class="ending-exclamation">!!</span>ALL THE BEST</div>'
+        html += '<div class="ending-text">ALL THE BEST!!!</div>'
         html += '</div>'
     
     # Answer key page (if requested)
@@ -569,6 +616,7 @@ def generate_html(config: PaperConfig, generated_blocks: List[GeneratedBlock],
             flex: 0 1 auto;
             min-width: 0;
             max-width: none;
+            font-weight: normal;
         }
         .answer-key-answer {
             font-weight: bold;
@@ -610,18 +658,37 @@ def generate_html(config: PaperConfig, generated_blocks: List[GeneratedBlock],
                     })
                     answer_counter += 1
         
-        # Split into 3 columns
+        # Split into 3 columns - fill first column, then second, then third
+        items_per_column = (len(all_answers) + 2) // 3  # Ceiling division
+        column1 = all_answers[:items_per_column]
+        column2 = all_answers[items_per_column:items_per_column * 2]
+        column3 = all_answers[items_per_column * 2:]
+        
         html += '<div class="answer-key-container">'
-        for col_idx in range(3):
-            html += '<div class="answer-key-column">'
-            # Distribute items across columns
-            for i in range(col_idx, len(all_answers), 3):
-                item = all_answers[i]
-                html += f'<div class="answer-key-item">'
-                html += f'<span class="answer-key-question">{item["number"]}. {item["question"]}</span>'
-                html += f'<span class="answer-key-answer">{item["answer"]}</span>'
-                html += '</div>'
-            html += '</div>'  # Close column
+        # First column
+        html += '<div class="answer-key-column">'
+        for item in column1:
+            html += f'<div class="answer-key-item">'
+            html += f'<span class="answer-key-question">{item["number"]}. {item["question"]}</span>'
+            html += f'<span class="answer-key-answer">{item["answer"]}</span>'
+            html += '</div>'
+        html += '</div>'
+        # Second column
+        html += '<div class="answer-key-column">'
+        for item in column2:
+            html += f'<div class="answer-key-item">'
+            html += f'<span class="answer-key-question">{item["number"]}. {item["question"]}</span>'
+            html += f'<span class="answer-key-answer">{item["answer"]}</span>'
+            html += '</div>'
+        html += '</div>'
+        # Third column
+        html += '<div class="answer-key-column">'
+        for item in column3:
+            html += f'<div class="answer-key-item">'
+            html += f'<span class="answer-key-question">{item["number"]}. {item["question"]}</span>'
+            html += f'<span class="answer-key-answer">{item["answer"]}</span>'
+            html += '</div>'
+        html += '</div>'
         html += '</div>'  # Close answer-key-container
     
     html += """

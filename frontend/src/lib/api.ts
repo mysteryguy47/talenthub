@@ -22,6 +22,23 @@ export interface Constraints {
   multiplierRange?: number;  // For multiply by 21-91
   divisor?: number;  // For divide by single digit
   tableNumber?: number;  // For tables
+  // Vedic Maths Level 2 constraints
+  funWith9Case?: "equal" | "less_than" | "greater_than" | "mix";  // For Fun with 9
+  divideBy9sCase?: "equal" | "less_than" | "mix";  // For Divide by 9's
+  divideBy11sCase?: "equal" | "less_than" | "mix";  // For Divide by 11's
+  powerOf10?: number;  // For subtraction from powers of 10 (2-6)
+  // Vedic Maths Level 3 constraints
+  multiplicationCase?: "2x2" | "3x2" | "4x2" | "3x3" | "4x3" | "4x4" | "mix";  // For vedic_multiplication
+  fractionCase?: "direct" | "different_denominator" | "whole" | "mix";  // For fraction operations
+  divisorCheck?: number;  // For check divisibility: 2,3,4,5,6,8,9,10
+  // Vedic Maths Level 4 constraints
+  funWith5Case?: "decimal" | "triple" | "mix";  // For Fun with 5 Level 4
+  funWith10Case?: "decimal" | "triple" | "mix";  // For Fun with 10 Level 4
+  divisibilityCase?: "by_7" | "by_11" | "random";  // For check divisibility Level 4
+  division9_8_7_6Case?: "9" | "8" | "7" | "6" | "mix";  // For Division (9, 8, 7, 6)
+  division91_121Case?: "91" | "121" | "mix";  // For Division (91, 121)
+  bodmasDifficulty?: "easy" | "medium" | "hard";  // For BODMAS
+  cubeRootDigits?: number;  // For cube root Level 4: 4-10 digits
 }
 
 export type QuestionType = 
@@ -32,7 +49,24 @@ export type QuestionType =
   | "vedic_multiply_by_12_19" | "vedic_special_products_base_100" | "vedic_special_products_base_50"
   | "vedic_multiply_by_21_91" | "vedic_addition" | "vedic_multiply_by_2" | "vedic_multiply_by_4"
   | "vedic_divide_by_2" | "vedic_divide_by_4" | "vedic_divide_single_digit" | "vedic_multiply_by_6"
-  | "vedic_divide_by_11" | "vedic_squares_base_10" | "vedic_squares_base_100" | "vedic_squares_base_1000" | "vedic_tables";
+  | "vedic_divide_by_11" | "vedic_squares_base_10" | "vedic_squares_base_100" | "vedic_squares_base_1000" | "vedic_tables"
+  | "vedic_fun_with_9" | "vedic_fun_with_5" | "vedic_fun_with_10" | "vedic_multiply_by_1001"
+  | "vedic_multiply_by_5_25_125" | "vedic_divide_by_5_25_125" | "vedic_multiply_by_5_50_500" | "vedic_divide_by_5_50_500"
+  | "vedic_vinculum" | "vedic_devinculum" | "vedic_subtraction_powers_of_10" | "vedic_special_products_base_1000"
+  | "vedic_special_products_cross_multiply" | "vedic_special_products_cross_base" | "vedic_special_products_cross_base_50"
+  | "vedic_duplex" | "vedic_squares_duplex" | "vedic_divide_with_remainder" | "vedic_divide_by_9s_repetition"
+  | "vedic_divide_by_11s_repetition" | "vedic_divide_by_7" | "vedic_dropping_10_method"
+  | "vedic_multiply_by_111_999" | "vedic_multiply_by_102_109" | "vedic_multiply_by_112_119" | "vedic_multiplication"
+  | "vedic_mix_multiplication" | "vedic_combined_operation" | "vedic_fraction_simplification" | "vedic_fraction_addition"
+  | "vedic_fraction_subtraction" | "vedic_squares_level3" | "vedic_percentage_level3" | "vedic_squares_addition"
+  | "vedic_squares_subtraction" | "vedic_squares_deviation" | "vedic_cubes" | "vedic_check_divisibility"
+  | "vedic_missing_numbers" | "vedic_box_multiply" | "vedic_multiply_by_10001" | "vedic_duplex_level3" | "vedic_squares_large"
+  | "vedic_multiplication_level4" | "vedic_multiply_by_111_999_level4" | "vedic_decimal_add_sub" | "vedic_fun_with_5_level4"
+  | "vedic_fun_with_10_level4" | "vedic_find_x" | "vedic_hcf" | "vedic_lcm_level4" | "vedic_bar_add_sub"
+  | "vedic_fraction_multiplication" | "vedic_fraction_division" | "vedic_check_divisibility_level4"
+  | "vedic_division_without_remainder" | "vedic_division_with_remainder" | "vedic_divide_by_11_99"
+  | "vedic_division_9_8_7_6" | "vedic_division_91_121" | "vedic_digital_sum" | "vedic_cubes_base_method"
+  | "vedic_check_perfect_cube" | "vedic_cube_root_level4" | "vedic_bodmas" | "vedic_square_root_level4" | "vedic_magic_square";
 
 export interface BlockConfig {
   id: string;
@@ -164,5 +198,128 @@ export async function generatePdf(
   });
   if (!res.ok) throw new Error("Failed to generate PDF");
   return res.blob();
+}
+
+// Paper Attempt API
+export interface PaperAttempt {
+  id: number;
+  paper_title: string;
+  paper_level: string;
+  total_questions: number;
+  correct_answers: number;
+  wrong_answers: number;
+  accuracy: number;
+  score: number;
+  time_taken: number | null;
+  points_earned: number;
+  started_at: string;
+  completed_at: string | null;
+}
+
+export interface PaperAttemptDetail extends PaperAttempt {
+  paper_config: PaperConfig;
+  generated_blocks: GeneratedBlock[];
+  seed: number;
+  answers: { [questionId: string]: number } | null;
+}
+
+export interface PaperAttemptCreate {
+  paper_title: string;
+  paper_level: string;
+  paper_config: PaperConfig;
+  generated_blocks: GeneratedBlock[];
+  seed: number;
+  answers?: { [questionId: string]: number };
+}
+
+export async function startPaperAttempt(data: PaperAttemptCreate): Promise<PaperAttempt> {
+  const token = localStorage.getItem("auth_token");
+  if (!token) throw new Error("Not authenticated");
+  const res = await fetch(`${API_BASE}/papers/attempt`, {
+    method: "POST",
+    headers: { 
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ detail: "Failed to start attempt" }));
+    throw new Error(error.detail || "Failed to start attempt");
+  }
+  return res.json();
+}
+
+export async function submitPaperAttempt(
+  attemptId: number,
+  answers: { [questionId: string]: number },
+  timeTaken: number
+): Promise<PaperAttempt> {
+  const token = localStorage.getItem("auth_token");
+  if (!token) throw new Error("Not authenticated");
+  
+  try {
+    const res = await fetch(`${API_BASE}/papers/attempt/${attemptId}`, {
+      method: "PUT",
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({ answers, time_taken: timeTaken }),
+    });
+    
+    if (!res.ok) {
+      let errorMessage = "Failed to submit attempt";
+      try {
+        const errorData = await res.json();
+        if (errorData.detail) {
+          // Handle both string and object detail
+          if (typeof errorData.detail === 'string') {
+            errorMessage = errorData.detail;
+          } else if (Array.isArray(errorData.detail)) {
+            errorMessage = errorData.detail.map((e: any) => 
+              `${e.loc?.join('.')}: ${e.msg || e.message || JSON.stringify(e)}`
+            ).join(', ');
+          } else {
+            errorMessage = JSON.stringify(errorData.detail);
+          }
+        } else if (errorData.message) {
+          errorMessage = typeof errorData.message === 'string' ? errorData.message : JSON.stringify(errorData.message);
+        }
+      } catch (parseError) {
+        const text = await res.text().catch(() => "");
+        errorMessage = text || `Server error: ${res.status} ${res.statusText}`;
+      }
+      throw new Error(errorMessage);
+    }
+    
+    return res.json();
+  } catch (error) {
+    // Re-throw with better error message
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error(typeof error === 'string' ? error : "Failed to submit attempt");
+  }
+}
+
+export async function getPaperAttempt(attemptId: number): Promise<PaperAttemptDetail> {
+  const token = localStorage.getItem("auth_token");
+  if (!token) throw new Error("Not authenticated");
+  const res = await fetch(`${API_BASE}/papers/attempt/${attemptId}`, {
+    headers: { "Authorization": `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error("Failed to get attempt");
+  return res.json();
+}
+
+export async function getPaperAttempts(): Promise<PaperAttempt[]> {
+  const token = localStorage.getItem("auth_token");
+  if (!token) throw new Error("Not authenticated");
+  const res = await fetch(`${API_BASE}/papers/attempts`, {
+    headers: { "Authorization": `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error("Failed to get attempts");
+  return res.json();
 }
 
