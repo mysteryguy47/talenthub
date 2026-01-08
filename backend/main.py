@@ -10,6 +10,8 @@ import json
 import hashlib
 import random
 import time
+import os
+import uvicorn
 
 from models import Paper, PaperAttempt, get_db, init_db
 from schemas import (
@@ -542,3 +544,6 @@ async def get_paper_attempt(
     
     return PaperAttemptDetailResponse.model_validate(paper_attempt)
 
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8080))
+    uvicorn.run("backend.main:app", host="0.0.0.0", port=port)
