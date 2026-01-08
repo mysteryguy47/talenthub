@@ -104,8 +104,9 @@ export interface PreviewResponse {
   seed: number;
 }
 
-// Use same API base as userApi for consistency
-const API_BASE = import.meta.env.VITE_API_BASE || "/api";
+// Import API base URL from config
+import { API_BASE_URL } from "@/config/api";
+const API_BASE = API_BASE_URL;
 
 export async function previewPaper(config: PaperConfig): Promise<PreviewResponse> {
   console.log("=".repeat(60));

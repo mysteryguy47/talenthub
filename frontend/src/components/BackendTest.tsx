@@ -1,6 +1,7 @@
 // Premium diagnostic component to test backend connectivity
 import { useState } from "react";
 import { Activity, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { API_BASE_URL } from "@/config/api";
 
 export default function BackendTest() {
   const [results, setResults] = useState<Array<{ time: string; message: string; status: 'success' | 'error' | 'info' }>>([]);
@@ -18,13 +19,12 @@ export default function BackendTest() {
     setTesting(true);
     setResults([]);
     
-    const apiBase = import.meta.env.VITE_API_BASE || "/api";
-    addResult(`Testing with API_BASE: ${apiBase}`, 'info');
+    addResult(`Testing with API_BASE_URL: ${API_BASE_URL}`, 'info');
     
     // Test 1: Health endpoint
     try {
       addResult("Test 1: Testing /api/health...", 'info');
-      const healthRes = await fetch(`${apiBase}/health`);
+      const healthRes = await fetch(`${API_BASE_URL}/health`);
       const healthText = await healthRes.text();
       if (healthRes.ok) {
         addResult(`✅ Health check passed: ${healthText}`, 'success');
@@ -38,7 +38,7 @@ export default function BackendTest() {
     // Test 2: Presets endpoint
     try {
       addResult("Test 2: Testing /api/presets/AB-1...", 'info');
-      const presetsRes = await fetch(`${apiBase}/presets/AB-1`);
+      const presetsRes = await fetch(`${API_BASE_URL}/presets/AB-1`);
       const presetsText = await presetsRes.text();
       if (presetsRes.ok) {
         const data = JSON.parse(presetsText);
@@ -67,7 +67,7 @@ export default function BackendTest() {
     // Test 4: Login endpoint
     try {
       addResult("Test 4: Testing /api/users/login endpoint...", 'info');
-      const loginRes = await fetch(`${apiBase}/users/login`, {
+      const loginRes = await fetch(`${API_BASE_URL}/users/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token: "test" }),

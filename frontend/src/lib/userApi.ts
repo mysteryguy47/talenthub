@@ -1,6 +1,7 @@
 // User API client - SIMPLIFIED
-// Use relative URL for Vite proxy in dev, or explicit URL from env
-const API_BASE = import.meta.env.VITE_API_BASE || "/api";
+// Import API base URL from config
+import { API_BASE_URL } from "@/config/api";
+const API_BASE = API_BASE_URL;
 
 // Helper to safely read response (can only read once!)
 async function readResponse<T = any>(res: Response): Promise<T> {

@@ -4,9 +4,6 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
 import os
-from dotenv import load_dotenv
-
-load_dotenv()
 
 Base = declarative_base()
 
@@ -160,26 +157,24 @@ class Leaderboard(Base):
 # Database setup
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-if DATABASE_URL:
-    if DATABASE_URL.startswith("postgresql://"):
-        DATABASE_URL = DATABASE_URL.replace(
-            "postgresql://",
-            "postgresql+psycopg2://"
-        ) + "?sslmode=require"
-else:
-    # Local fallback
+if not DATABASE_URL:
     DATABASE_URL = "sqlite:///./abacus_replitt.db"
+
+if DATABASE_URL.startswith("postgresql://") or DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace(
+        "postgres://", "postgresql+psycopg2://"
+    ).replace(
+        "postgresql://", "postgresql+psycopg2://"
+    )
+    DATABASE_URL += "?sslmode=require"
 
 engine = create_engine(
     DATABASE_URL,
     pool_pre_ping=True
 )
 
-SessionLocal = sessionmaker(
-    autocommit=False,
-    autoflush=False,
-    bind=engine
-)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
 
 
 def init_db():
