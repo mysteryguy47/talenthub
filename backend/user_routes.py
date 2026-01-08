@@ -5,7 +5,7 @@ from sqlalchemy import func, desc
 from typing import List
 from datetime import datetime, timedelta
 
-from models import User, PracticeSession, Attempt, Reward, get_db
+from models import User, PracticeSession, Attempt, Reward, Leaderboard, PaperAttempt, Paper, get_db
 from auth import get_current_user, get_current_admin, verify_google_token, create_access_token
 from user_schemas import (
     LoginRequest, LoginResponse, UserResponse, PracticeSessionCreate,
@@ -39,11 +39,14 @@ async def login(login_data: LoginRequest, db: Session = Depends(get_db)):
         # Find or create user
         user = db.query(User).filter(User.google_id == user_info["google_id"]).first()
         
+        # Check if admin email (you can set this in environment)
+        import os
+        admin_emails = [email.strip() for email in os.getenv("ADMIN_EMAILS", "").split(",") if email.strip()]
+        is_admin_email = user_info["email"] in admin_emails
+        
         if not user:
-            # Check if admin email (you can set this in environment)
-            import os
-            admin_emails = os.getenv("ADMIN_EMAILS", "").split(",")
-            role = "admin" if user_info["email"] in admin_emails else "student"
+            # New user - assign role based on admin emails
+            role = "admin" if is_admin_email else "student"
             
             user = User(
                 google_id=user_info["google_id"],
@@ -56,15 +59,28 @@ async def login(login_data: LoginRequest, db: Session = Depends(get_db)):
             db.commit()
             db.refresh(user)
             
-                    # Create leaderboard entry
+            # Create leaderboard entry
             from models import Leaderboard
             leaderboard = Leaderboard(user_id=user.id, total_points=0)
             db.add(leaderboard)
             db.commit()
         else:
-            # Update user info in case it changed
+            # Existing user - update info and check if role needs updating
             user.name = user_info["name"]
             user.avatar_url = user_info.get("avatar_url")
+            
+            # Update role if email is in admin list (promote to admin)
+            # Or demote if email is removed from admin list (but keep existing admins unless explicitly removed)
+            if is_admin_email and user.role != "admin":
+                print(f"🔄 [AUTH] Promoting user {user.email} to admin (found in ADMIN_EMAILS)")
+                user.role = "admin"
+            elif not is_admin_email and user.role == "admin":
+                # Only demote if explicitly not in admin list (optional - comment out if you want to keep existing admins)
+                # Uncomment the next line if you want to automatically demote admins removed from ADMIN_EMAILS
+                # print(f"🔄 [AUTH] Demoting user {user.email} from admin (not in ADMIN_EMAILS)")
+                # user.role = "student"
+                pass
+            
             db.commit()
         
         # Create access token - sub must be a string for JWT
@@ -359,4 +375,172 @@ async def get_student_stats_admin(
         badges=badge_names,
         recent_sessions=[PracticeSessionResponse.model_validate(s) for s in recent_sessions]
     )
+
+
+class UpdatePointsRequest(BaseModel):
+    points: int
+
+
+class DatabaseStatsResponse(BaseModel):
+    total_users: int
+    total_students: int
+    total_admins: int
+    total_sessions: int
+    total_paper_attempts: int
+    total_rewards: int
+    total_papers: int
+    database_size_mb: float
+
+
+@router.delete("/admin/students/{student_id}")
+async def delete_student(
+    student_id: int,
+    admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Delete a student account and all associated data."""
+    student = db.query(User).filter(
+        User.id == student_id,
+        User.role == "student"
+    ).first()
+    
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    
+    # Delete associated data (cascade should handle most, but we'll be explicit)
+    # Delete leaderboard entry
+    leaderboard = db.query(Leaderboard).filter(Leaderboard.user_id == student_id).first()
+    if leaderboard:
+        db.delete(leaderboard)
+    
+    # Delete user (cascade will handle sessions, attempts, rewards, paper_attempts)
+    db.delete(student)
+    db.commit()
+    
+    # Refresh leaderboard after deletion
+    update_leaderboard(db)
+    update_weekly_leaderboard(db)
+    
+    return {"message": f"Student {student.name} deleted successfully"}
+
+
+@router.put("/admin/students/{student_id}/points")
+async def update_student_points(
+    student_id: int,
+    request: UpdatePointsRequest,
+    admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Update a student's total points."""
+    student = db.query(User).filter(
+        User.id == student_id,
+        User.role == "student"
+    ).first()
+    
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    
+    old_points = student.total_points
+    student.total_points = max(0, request.points)  # Ensure non-negative
+    db.commit()
+    
+    # Update leaderboard entry
+    leaderboard = db.query(Leaderboard).filter(Leaderboard.user_id == student_id).first()
+    if leaderboard:
+        leaderboard.total_points = student.total_points
+        db.commit()
+    
+    # Refresh leaderboard rankings
+    update_leaderboard(db)
+    
+    return {
+        "message": f"Points updated for {student.name}",
+        "old_points": old_points,
+        "new_points": student.total_points
+    }
+
+
+@router.post("/admin/leaderboard/refresh")
+async def refresh_leaderboard(
+    admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Manually refresh both overall and weekly leaderboards."""
+    update_leaderboard(db)
+    update_weekly_leaderboard(db)
+    return {"message": "Leaderboard refreshed successfully"}
+
+
+@router.get("/admin/database/stats", response_model=DatabaseStatsResponse)
+async def get_database_stats(
+    admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Get database statistics."""
+    total_users = db.query(User).count()
+    total_students = db.query(User).filter(User.role == "student").count()
+    total_admins = db.query(User).filter(User.role == "admin").count()
+    total_sessions = db.query(PracticeSession).count()
+    total_paper_attempts = db.query(PaperAttempt).count()
+    total_rewards = db.query(Reward).count()
+    total_papers = db.query(Paper).count()
+    
+    # Estimate database size (SQLite)
+    import os
+    db_path = os.getenv("DATABASE_URL", "sqlite:///./abacus_replitt.db")
+    if db_path.startswith("sqlite:///"):
+        db_file = db_path.replace("sqlite:///", "")
+        if os.path.exists(db_file):
+            db_size_mb = os.path.getsize(db_file) / (1024 * 1024)
+        else:
+            db_size_mb = 0.0
+    else:
+        db_size_mb = 0.0  # PostgreSQL size calculation would be different
+    
+    return DatabaseStatsResponse(
+        total_users=total_users,
+        total_students=total_students,
+        total_admins=total_admins,
+        total_sessions=total_sessions,
+        total_paper_attempts=total_paper_attempts,
+        total_rewards=total_rewards,
+        total_papers=total_papers,
+        database_size_mb=round(db_size_mb, 2)
+    )
+
+
+@router.post("/admin/promote-self")
+async def promote_self_to_admin(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Allow users to promote themselves to admin if their email is in ADMIN_EMAILS.
+    This is useful for fixing existing users who should be admins.
+    """
+    import os
+    admin_emails = [email.strip() for email in os.getenv("ADMIN_EMAILS", "").split(",") if email.strip()]
+    
+    if current_user.email not in admin_emails:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your email is not in the ADMIN_EMAILS list. Contact system administrator."
+        )
+    
+    if current_user.role == "admin":
+        return {
+            "message": "You are already an admin",
+            "email": current_user.email,
+            "role": current_user.role
+        }
+    
+    # Promote to admin
+    current_user.role = "admin"
+    db.commit()
+    
+    return {
+        "message": f"Successfully promoted {current_user.email} to admin",
+        "email": current_user.email,
+        "role": current_user.role
+    }
 

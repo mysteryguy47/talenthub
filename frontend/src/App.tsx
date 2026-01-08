@@ -12,6 +12,7 @@ import NotFound from "./pages/NotFound";
 import Login from "./components/Login";
 import StudentDashboard from "./pages/StudentDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
+import PromoteAdmin from "./pages/PromoteAdmin";
 import AbacusCourse from "./pages/AbacusCourse";
 import VedicMathsCourse from "./pages/VedicMathsCourse";
 import HandwritingCourse from "./pages/HandwritingCourse";
@@ -41,6 +42,38 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
   }
   
   console.log("✅ [PROTECTED] Authenticated, showing protected content");
+  return <>{children}</>;
+}
+
+function AdminRoute({ children }: { children: ReactNode }) {
+  const { isAuthenticated, loading, isAdmin, user } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        <div className="text-xl">Loading...</div>
+      </div>
+    );
+  }
+  
+  if (!isAuthenticated) {
+    return <Login />;
+  }
+  
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        <div className="text-center">
+          <div className="text-2xl font-bold text-red-600 mb-4">Access Denied</div>
+          <div className="text-slate-600 mb-4">You do not have permission to access this page.</div>
+          <a href="/dashboard" className="text-indigo-600 hover:text-indigo-700 underline">
+            Go to Dashboard
+          </a>
+        </div>
+      </div>
+    );
+  }
+  
   return <>{children}</>;
 }
 
@@ -87,8 +120,13 @@ function AppContent() {
                 </ProtectedRoute>
               </Route>
               <Route path="/admin">
-                <ProtectedRoute>
+                <AdminRoute>
                   <AdminDashboard />
+                </AdminRoute>
+              </Route>
+              <Route path="/promote-admin">
+                <ProtectedRoute>
+                  <PromoteAdmin />
                 </ProtectedRoute>
               </Route>
               <Route path="/courses/abacus" component={AbacusCourse} />

@@ -311,6 +311,346 @@ def generate_question(
                 answer=float(num * num),
                 isVertical=False
             )
+        # Vedic Maths Level 2 fallbacks
+        elif question_type == "vedic_fun_with_9":
+            digits = constraints.digits if constraints.digits is not None else 2
+            digits = max(1, min(10, digits))
+            num = generate_num_fallback(digits)
+            multiplier_9s = int("9" * digits)
+            return Question(
+                id=question_id,
+                text=f"{num} × {multiplier_9s} =",
+                operands=[num, multiplier_9s],
+                operator="×",
+                operators=None,
+                answer=float(num * multiplier_9s),
+                isVertical=False
+            )
+        elif question_type == "vedic_fun_with_5":
+            first_digit = (question_id % 9) + 1
+            second_digit1 = (question_id * 3) % 10
+            second_digit2 = 10 - second_digit1
+            num1 = first_digit * 10 + second_digit1
+            num2 = first_digit * 10 + second_digit2
+            return Question(
+                id=question_id,
+                text=f"{num1} × {num2} =",
+                operands=[num1, num2],
+                operator="×",
+                operators=None,
+                answer=float(num1 * num2),
+                isVertical=False
+            )
+        elif question_type == "vedic_fun_with_10":
+            first_digit1 = (question_id % 9) + 1
+            first_digit2 = 10 - first_digit1
+            second_digit = (question_id * 3) % 10
+            num1 = first_digit1 * 10 + second_digit
+            num2 = first_digit2 * 10 + second_digit
+            return Question(
+                id=question_id,
+                text=f"{num1} × {num2} =",
+                operands=[num1, num2],
+                operator="×",
+                operators=None,
+                answer=float(num1 * num2),
+                isVertical=False
+            )
+        elif question_type == "vedic_multiply_by_1001":
+            digits = constraints.digits if constraints.digits is not None else 2
+            digits = max(1, min(10, digits))
+            num = generate_num_fallback(digits)
+            return Question(
+                id=question_id,
+                text=f"{num} × 1001 =",
+                operands=[num, 1001],
+                operator="×",
+                operators=None,
+                answer=float(num * 1001),
+                isVertical=False
+            )
+        elif question_type == "vedic_multiply_by_5_25_125":
+            digits = constraints.digits if constraints.digits is not None else 2
+            digits = max(1, min(10, digits))
+            multipliers = [5, 25, 125]
+            multiplier = multipliers[question_id % 3]
+            num = generate_num_fallback(digits)
+            return Question(
+                id=question_id,
+                text=f"{num} × {multiplier} =",
+                operands=[num, multiplier],
+                operator="×",
+                operators=None,
+                answer=float(num * multiplier),
+                isVertical=False
+            )
+        elif question_type == "vedic_divide_by_5_25_125":
+            digits = constraints.digits if constraints.digits is not None else 2
+            digits = max(1, min(10, digits))
+            divisors = [5, 25, 125]
+            divisor = divisors[question_id % 3]
+            num = generate_num_fallback(digits)
+            if num % divisor == 0:
+                num = num + 1
+            return Question(
+                id=question_id,
+                text=f"{num} ÷ {divisor} =",
+                operands=[num, divisor],
+                operator="÷",
+                operators=None,
+                answer=float(num / divisor),
+                isVertical=False
+            )
+        elif question_type == "vedic_multiply_by_5_50_500":
+            digits = constraints.digits if constraints.digits is not None else 2
+            digits = max(1, min(10, digits))
+            multipliers = [5, 50, 500]
+            multiplier = multipliers[question_id % 3]
+            num = generate_num_fallback(digits)
+            return Question(
+                id=question_id,
+                text=f"{num} × {multiplier} =",
+                operands=[num, multiplier],
+                operator="×",
+                operators=None,
+                answer=float(num * multiplier),
+                isVertical=False
+            )
+        elif question_type == "vedic_divide_by_5_50_500":
+            digits = constraints.digits if constraints.digits is not None else 2
+            digits = max(1, min(10, digits))
+            divisors = [5, 50, 500]
+            divisor = divisors[question_id % 3]
+            num = generate_num_fallback(digits)
+            if num % divisor == 0:
+                num = num + 1
+            return Question(
+                id=question_id,
+                text=f"{num} ÷ {divisor} =",
+                operands=[num, divisor],
+                operator="÷",
+                operators=None,
+                answer=float(num / divisor),
+                isVertical=False
+            )
+        elif question_type == "vedic_vinculum":
+            num = generate_num_fallback(2)
+            return Question(
+                id=question_id,
+                text=f"Vinculum of {num} (Coming Soon)",
+                operands=[num],
+                operator="V",
+                operators=None,
+                answer=float(num),
+                isVertical=False
+            )
+        elif question_type == "vedic_devinculum":
+            num = generate_num_fallback(2)
+            return Question(
+                id=question_id,
+                text=f"DeVinculum of {num} (Coming Soon)",
+                operands=[num],
+                operator="DV",
+                operators=None,
+                answer=float(num),
+                isVertical=False
+            )
+        elif question_type == "vedic_subtraction_powers_of_10":
+            power = constraints.powerOf10 if constraints.powerOf10 is not None else None
+            if power is None:
+                power = (question_id % 5) + 2  # 2-6
+            base = 10 ** power
+            num = int(generate_num_fallback(len(str(base - 1))))
+            if num >= base:
+                num = base - 1
+            return Question(
+                id=question_id,
+                text=f"{base} - {num} =",
+                operands=[base, num],
+                operator="-",
+                operators=None,
+                answer=float(base - num),
+                isVertical=False
+            )
+        elif question_type == "vedic_special_products_base_1000":
+            offset1 = (question_id % 20) - 10
+            offset2 = ((question_id * 3) % 20) - 10
+            num1 = max(1, 1000 + offset1)
+            num2 = max(1, 1000 + offset2)
+            return Question(
+                id=question_id,
+                text=f"{num1} × {num2} =",
+                operands=[num1, num2],
+                operator="×",
+                operators=None,
+                answer=float(num1 * num2),
+                isVertical=False
+            )
+        elif question_type == "vedic_special_products_cross_multiply":
+            base = constraints.base if constraints.base is not None else 100
+            base = 10 ** int(math.log10(base)) if base > 0 else 100
+            max_offset = min(base // 10, 50)
+            offset1 = (question_id % max_offset) + 1
+            offset2 = -(((question_id * 3) % max_offset) + 1)
+            num1 = max(1, base + offset1)
+            num2 = max(1, base + offset2)
+            return Question(
+                id=question_id,
+                text=f"{num1} × {num2} =",
+                operands=[num1, num2],
+                operator="×",
+                operators=None,
+                answer=float(num1 * num2),
+                isVertical=False
+            )
+        elif question_type == "vedic_special_products_cross_base":
+            offset1 = (question_id % 20) - 10
+            offset2 = ((question_id * 3) % 20) - 10
+            num1 = max(1, 1000 + offset1)
+            num2 = max(1, 100 + offset2)
+            return Question(
+                id=question_id,
+                text=f"{num1} × {num2} =",
+                operands=[num1, num2],
+                operator="×",
+                operators=None,
+                answer=float(num1 * num2),
+                isVertical=False
+            )
+        elif question_type == "vedic_special_products_cross_base_50":
+            offset1 = (question_id % 20) - 10
+            offset2 = ((question_id * 3) % 20) - 10
+            num1 = max(1, 50 + offset1)
+            num2 = max(1, 50 + offset2)
+            return Question(
+                id=question_id,
+                text=f"{num1} × {num2} =",
+                operands=[num1, num2],
+                operator="×",
+                operators=None,
+                answer=float(num1 * num2),
+                isVertical=False
+            )
+        elif question_type == "vedic_duplex":
+            digits = constraints.digits if constraints.digits is not None else 2
+            digits = max(2, min(10, digits))
+            num = generate_num_fallback(digits)
+            num_str = str(num)
+            duplex_value = 0
+            n = len(num_str)
+            for i in range(n // 2):
+                left_idx = i
+                right_idx = n - 1 - i
+                if left_idx < right_idx:
+                    left_digit = int(num_str[left_idx])
+                    right_digit = int(num_str[right_idx])
+                    duplex_value += left_digit * right_digit * 2
+            if n % 2 == 1:
+                mid_idx = n // 2
+                mid_digit = int(num_str[mid_idx])
+                duplex_value += mid_digit * mid_digit
+            return Question(
+                id=question_id,
+                text=f"D of {num}",
+                operands=[num],
+                operator="D",
+                operators=None,
+                answer=float(duplex_value),
+                isVertical=False
+            )
+        elif question_type == "vedic_squares_duplex":
+            digits = constraints.digits if constraints.digits is not None else 2
+            digits = max(1, min(10, digits))
+            num = generate_num_fallback(digits)
+            return Question(
+                id=question_id,
+                text=f"{num}² =",
+                operands=[num],
+                operator="²",
+                operators=None,
+                answer=float(num * num),
+                isVertical=False
+            )
+        elif question_type == "vedic_divide_with_remainder":
+            digits = constraints.digits if constraints.digits is not None else 2
+            digits = max(1, min(10, digits))
+            divisor = (question_id % 8) + 2  # 2-9
+            num = generate_num_fallback(digits)
+            if num % divisor == 0:
+                num = num + 1
+            return Question(
+                id=question_id,
+                text=f"{num} ÷ {divisor} =",
+                operands=[num, divisor],
+                operator="÷",
+                operators=None,
+                answer=float(num / divisor),
+                isVertical=False
+            )
+        elif question_type == "vedic_divide_by_9s_repetition":
+            digits = constraints.digits if constraints.digits is not None else 2
+            digits = max(1, min(10, digits))
+            num = generate_num_fallback(digits)
+            divisor_9s = int("9" * digits)
+            return Question(
+                id=question_id,
+                text=f"{num} ÷ {divisor_9s} =",
+                operands=[num, divisor_9s],
+                operator="÷",
+                operators=None,
+                answer=float(num / divisor_9s),
+                isVertical=False
+            )
+        elif question_type == "vedic_divide_by_11s_repetition":
+            digits = constraints.digits if constraints.digits is not None else 2
+            digits = max(1, min(10, digits))
+            num = generate_num_fallback(digits)
+            divisor_11s = int("1" * (digits + 1))
+            return Question(
+                id=question_id,
+                text=f"{num} ÷ {divisor_11s} =",
+                operands=[num, divisor_11s],
+                operator="÷",
+                operators=None,
+                answer=float(num / divisor_11s),
+                isVertical=False
+            )
+        elif question_type == "vedic_divide_by_7":
+            digits = constraints.digits if constraints.digits is not None else 2
+            digits = max(1, min(10, digits))
+            num = generate_num_fallback(digits)
+            if num % 7 == 0:
+                num = num + 1
+            return Question(
+                id=question_id,
+                text=f"{num} ÷ 7 =",
+                operands=[num, 7],
+                operator="÷",
+                operators=None,
+                answer=float(num / 7),
+                isVertical=False
+            )
+        elif question_type == "vedic_dropping_10_method":
+            digits = constraints.digits if constraints.digits is not None else 2
+            rows = constraints.rows if constraints.rows is not None else 3
+            rows = max(2, min(30, rows))
+            operands_list = []
+            for _ in range(rows):
+                num = generate_num_fallback(digits)
+                operands_list.append(num)
+            total = sum(operands_list)
+            text_lines = [str(operands_list[0])]
+            for num in operands_list[1:]:
+                text_lines.append(f"+ {num}")
+            return Question(
+                id=question_id,
+                text="\n".join(text_lines),
+                operands=operands_list,
+                operator="+",
+                operators=None,
+                answer=float(total),
+                isVertical=True
+            )
         # Default fallback for addition and other unhandled types
         digits = constraints.digits or 1
         a = generate_num_fallback(digits)

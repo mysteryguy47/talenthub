@@ -1,25 +1,35 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import { getAdminStats, getAllStudents, getStudentStatsAdmin, AdminStats, User, StudentStats } from "../lib/userApi";
-import { Shield, Users, BarChart3, Target, TrendingUp, User as UserIcon, Award } from "lucide-react";
+import { 
+  getAdminStats, getAllStudents, getStudentStatsAdmin, AdminStats, User, StudentStats,
+  deleteStudent, updateStudentPoints, refreshLeaderboard, getDatabaseStats, DatabaseStats
+} from "../lib/userApi";
+import { Shield, Users, BarChart3, Target, TrendingUp, User as UserIcon, Award, Trash2, Edit2, RefreshCw, Database, Save, X } from "lucide-react";
 
 export default function AdminDashboard() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [students, setStudents] = useState<User[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<User | null>(null);
   const [studentStats, setStudentStats] = useState<StudentStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [editingPoints, setEditingPoints] = useState<number | null>(null);
+  const [pointsInput, setPointsInput] = useState<string>("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(null);
+  const [dbStats, setDbStats] = useState<DatabaseStats | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [statsData, studentsData] = await Promise.all([
+        const [statsData, studentsData, dbStatsData] = await Promise.all([
           getAdminStats(),
           getAllStudents(),
+          getDatabaseStats(),
         ]);
         setStats(statsData);
         setStudents(studentsData);
+        setDbStats(dbStatsData);
       } catch (error) {
         console.error("Failed to load admin data:", error);
       } finally {
@@ -31,6 +41,8 @@ export default function AdminDashboard() {
 
   const handleStudentClick = async (student: User) => {
     setSelectedStudent(student);
+    setEditingPoints(null);
+    setPointsInput("");
     try {
       const stats = await getStudentStatsAdmin(student.id);
       setStudentStats(stats);
@@ -39,10 +51,101 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleDeleteStudent = async (studentId: number) => {
+    if (!window.confirm("Are you sure you want to delete this student? This action cannot be undone.")) {
+      return;
+    }
+    try {
+      await deleteStudent(studentId);
+      setStudents(students.filter(s => s.id !== studentId));
+      if (selectedStudent?.id === studentId) {
+        setSelectedStudent(null);
+        setStudentStats(null);
+      }
+      // Reload stats
+      const statsData = await getAdminStats();
+      setStats(statsData);
+      const dbStatsData = await getDatabaseStats();
+      setDbStats(dbStatsData);
+    } catch (error) {
+      console.error("Failed to delete student:", error);
+      alert("Failed to delete student. Please try again.");
+    }
+    setShowDeleteConfirm(null);
+  };
+
+  const handleStartEditPoints = () => {
+    if (studentStats) {
+      setEditingPoints(studentStats.total_points);
+      setPointsInput(studentStats.total_points.toString());
+    }
+  };
+
+  const handleSavePoints = async () => {
+    if (!selectedStudent || !pointsInput) return;
+    const newPoints = parseInt(pointsInput);
+    if (isNaN(newPoints) || newPoints < 0) {
+      alert("Please enter a valid non-negative number");
+      return;
+    }
+    try {
+      await updateStudentPoints(selectedStudent.id, newPoints);
+      // Reload data
+      const [statsData, studentsData, stats] = await Promise.all([
+        getAdminStats(),
+        getAllStudents(),
+        getStudentStatsAdmin(selectedStudent.id),
+      ]);
+      setStats(statsData);
+      setStudents(studentsData);
+      setStudentStats(stats);
+      setEditingPoints(null);
+      setPointsInput("");
+    } catch (error) {
+      console.error("Failed to update points:", error);
+      alert("Failed to update points. Please try again.");
+    }
+  };
+
+  const handleCancelEditPoints = () => {
+    setEditingPoints(null);
+    setPointsInput("");
+  };
+
+  const handleRefreshLeaderboard = async () => {
+    setRefreshing(true);
+    try {
+      await refreshLeaderboard();
+      // Reload stats
+      const statsData = await getAdminStats();
+      setStats(statsData);
+      alert("Leaderboard refreshed successfully!");
+    } catch (error) {
+      console.error("Failed to refresh leaderboard:", error);
+      alert("Failed to refresh leaderboard. Please try again.");
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
         <div className="text-xl">Loading admin dashboard...</div>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-2xl font-bold text-red-600 mb-4">Access Denied</div>
+          <div className="text-slate-600 mb-4">You do not have admin permissions to access this page.</div>
+          <a href="/dashboard" className="text-indigo-600 hover:text-indigo-700 underline">
+            Go to Dashboard
+          </a>
+        </div>
       </div>
     );
   }
@@ -67,6 +170,14 @@ export default function AdminDashboard() {
             </h1>
             <p className="text-slate-600 text-lg">Monitor all student activity and progress</p>
           </div>
+          <button
+            onClick={handleRefreshLeaderboard}
+            disabled={refreshing}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
+            Refresh Leaderboard
+          </button>
         </div>
 
         {/* Stats Cards */}
@@ -166,8 +277,47 @@ export default function AdminDashboard() {
 
                 <div className="space-y-4">
                   <div className="p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-200">
-                    <div className="text-sm text-slate-600 mb-2">Total Points</div>
-                    <div className="text-2xl font-bold text-indigo-600">{studentStats.total_points}</div>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-sm text-slate-600">Total Points</div>
+                      {editingPoints === null ? (
+                        <button
+                          onClick={handleStartEditPoints}
+                          className="p-1.5 text-indigo-600 hover:bg-indigo-100 rounded-lg transition-colors"
+                          title="Edit points"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                      ) : (
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={handleSavePoints}
+                            className="p-1.5 text-green-600 hover:bg-green-100 rounded-lg transition-colors"
+                            title="Save"
+                          >
+                            <Save className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={handleCancelEditPoints}
+                            className="p-1.5 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
+                            title="Cancel"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    {editingPoints === null ? (
+                      <div className="text-2xl font-bold text-indigo-600">{studentStats.total_points}</div>
+                    ) : (
+                      <input
+                        type="number"
+                        value={pointsInput}
+                        onChange={(e) => setPointsInput(e.target.value)}
+                        className="w-full px-3 py-2 border border-indigo-300 rounded-lg text-2xl font-bold text-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        min="0"
+                        autoFocus
+                      />
+                    )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
@@ -204,6 +354,14 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                   )}
+
+                  <button
+                    onClick={() => handleDeleteStudent(selectedStudent.id)}
+                    className="w-full mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Delete Account
+                  </button>
                 </div>
               </>
             ) : (
@@ -247,6 +405,46 @@ export default function AdminDashboard() {
             ))}
           </div>
         </div>
+
+        {/* Database Stats */}
+        {dbStats && (
+          <div className="mt-8 bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-slate-200/50">
+            <div className="flex items-center gap-3 mb-6">
+              <Database className="w-6 h-6 text-indigo-600" />
+              <h2 className="text-2xl font-bold text-slate-900">Database Statistics</h2>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                <div className="text-xs text-slate-600 mb-1">Total Users</div>
+                <div className="text-xl font-bold text-slate-900">{dbStats.total_users}</div>
+              </div>
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                <div className="text-xs text-slate-600 mb-1">Students</div>
+                <div className="text-xl font-bold text-indigo-600">{dbStats.total_students}</div>
+              </div>
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                <div className="text-xs text-slate-600 mb-1">Admins</div>
+                <div className="text-xl font-bold text-purple-600">{dbStats.total_admins}</div>
+              </div>
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                <div className="text-xs text-slate-600 mb-1">Sessions</div>
+                <div className="text-xl font-bold text-green-600">{dbStats.total_sessions}</div>
+              </div>
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                <div className="text-xs text-slate-600 mb-1">Paper Attempts</div>
+                <div className="text-xl font-bold text-blue-600">{dbStats.total_paper_attempts}</div>
+              </div>
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                <div className="text-xs text-slate-600 mb-1">Rewards</div>
+                <div className="text-xl font-bold text-yellow-600">{dbStats.total_rewards}</div>
+              </div>
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                <div className="text-xs text-slate-600 mb-1">DB Size</div>
+                <div className="text-xl font-bold text-slate-900">{dbStats.database_size_mb} MB</div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

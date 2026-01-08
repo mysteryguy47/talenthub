@@ -441,6 +441,65 @@ export async function getStudentStatsAdmin(studentId: number): Promise<StudentSt
   return readResponse<StudentStats>(res);
 }
 
+// Admin: Delete student
+export async function deleteStudent(studentId: number): Promise<{ message: string }> {
+  const res = await fetch(`${API_BASE}/users/admin/students/${studentId}`, {
+    method: "DELETE",
+    headers: getAuthHeaders(),
+  });
+  return readResponse<{ message: string }>(res);
+}
+
+// Admin: Update student points
+export async function updateStudentPoints(studentId: number, points: number): Promise<{ message: string; old_points: number; new_points: number }> {
+  const res = await fetch(`${API_BASE}/users/admin/students/${studentId}/points`, {
+    method: "PUT",
+    headers: {
+      ...getAuthHeaders(),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ points }),
+  });
+  return readResponse<{ message: string; old_points: number; new_points: number }>(res);
+}
+
+// Admin: Refresh leaderboard
+export async function refreshLeaderboard(): Promise<{ message: string }> {
+  const res = await fetch(`${API_BASE}/users/admin/leaderboard/refresh`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+  });
+  return readResponse<{ message: string }>(res);
+}
+
+// Admin: Get database stats
+export interface DatabaseStats {
+  total_users: number;
+  total_students: number;
+  total_admins: number;
+  total_sessions: number;
+  total_paper_attempts: number;
+  total_rewards: number;
+  total_papers: number;
+  database_size_mb: number;
+}
+
+export async function getDatabaseStats(): Promise<DatabaseStats> {
+  const res = await fetch(`${API_BASE}/users/admin/database/stats`, {
+    headers: getAuthHeaders(),
+  });
+  return readResponse<DatabaseStats>(res);
+}
+
+// Promote self to admin (if email is in ADMIN_EMAILS)
+export async function promoteSelfToAdmin(): Promise<{ message: string; email: string; role: string }> {
+  const res = await fetch(`${API_BASE}/users/admin/promote-self`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+  });
+  return readResponse<{ message: string; email: string; role: string }>(res);
+}
+
 // Get practice session details with attempts
 export async function getPracticeSessionDetail(sessionId: number): Promise<PracticeSessionDetail> {
   const res = await fetch(`${API_BASE}/users/practice-session/${sessionId}`, {
