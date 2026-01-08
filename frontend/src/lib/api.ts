@@ -106,7 +106,11 @@ export interface PreviewResponse {
 
 // Import API base URL from config
 import { API_BASE_URL } from "@/config/api";
-const API_BASE = API_BASE_URL;
+
+// Helper to build API URLs correctly
+export function apiUrl(path: string): string {
+  return `${API_BASE_URL}/api${path}`;
+}
 
 export async function previewPaper(config: PaperConfig): Promise<PreviewResponse> {
   console.log("=".repeat(60));
@@ -114,9 +118,8 @@ export async function previewPaper(config: PaperConfig): Promise<PreviewResponse
   console.log("=".repeat(60));
   console.log("Config:", JSON.stringify(config, null, 2));
   
-  const url = `${API_BASE}/papers/preview`;
+  const url = apiUrl(`/papers/preview`);
   console.log("URL:", url);
-  console.log("Full URL would be:", window.location.origin + url);
   
   try {
     const requestBody = JSON.stringify(config);
@@ -192,7 +195,7 @@ export async function generatePdf(
   generatedBlocks?: GeneratedBlock[],
   answersOnly?: boolean
 ): Promise<Blob> {
-  const res = await fetch(`${API_BASE}/papers/generate-pdf`, {
+  const res = await fetch(apiUrl(`/papers/generate-pdf`), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ config, withAnswers, seed, generatedBlocks, answersOnly }),
@@ -236,7 +239,7 @@ export interface PaperAttemptCreate {
 export async function startPaperAttempt(data: PaperAttemptCreate): Promise<PaperAttempt> {
   const token = localStorage.getItem("auth_token");
   if (!token) throw new Error("Not authenticated");
-  const res = await fetch(`${API_BASE}/papers/attempt`, {
+  const res = await fetch(apiUrl(`/papers/attempt`), {
     method: "POST",
     headers: { 
       "Content-Type": "application/json",
@@ -260,7 +263,7 @@ export async function submitPaperAttempt(
   if (!token) throw new Error("Not authenticated");
   
   try {
-    const res = await fetch(`${API_BASE}/papers/attempt/${attemptId}`, {
+    const res = await fetch(apiUrl(`/papers/attempt/${attemptId}`), {
       method: "PUT",
       headers: { 
         "Content-Type": "application/json",
@@ -307,7 +310,7 @@ export async function submitPaperAttempt(
 export async function getPaperAttempt(attemptId: number): Promise<PaperAttemptDetail> {
   const token = localStorage.getItem("auth_token");
   if (!token) throw new Error("Not authenticated");
-  const res = await fetch(`${API_BASE}/papers/attempt/${attemptId}`, {
+  const res = await fetch(apiUrl(`/papers/attempt/${attemptId}`), {
     headers: { "Authorization": `Bearer ${token}` },
   });
   if (!res.ok) throw new Error("Failed to get attempt");
@@ -317,7 +320,7 @@ export async function getPaperAttempt(attemptId: number): Promise<PaperAttemptDe
 export async function getPaperAttempts(): Promise<PaperAttempt[]> {
   const token = localStorage.getItem("auth_token");
   if (!token) throw new Error("Not authenticated");
-  const res = await fetch(`${API_BASE}/papers/attempts`, {
+  const res = await fetch(apiUrl(`/papers/attempts`), {
     headers: { "Authorization": `Bearer ${token}` },
   });
   if (!res.ok) {

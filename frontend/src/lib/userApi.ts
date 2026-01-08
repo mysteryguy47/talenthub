@@ -1,7 +1,11 @@
 // User API client - SIMPLIFIED
 // Import API base URL from config
 import { API_BASE_URL } from "@/config/api";
-const API_BASE = API_BASE_URL;
+
+// Helper to build API URLs correctly
+function apiUrl(path: string): string {
+  return `${API_BASE_URL}/api${path}`;
+}
 
 // Helper to safely read response (can only read once!)
 async function readResponse<T = any>(res: Response): Promise<T> {
@@ -162,9 +166,9 @@ async function testBackendConnection(baseUrl: string): Promise<boolean> {
 export async function loginWithGoogle(token: string): Promise<LoginResponse> {
   console.log("🔵 [LOGIN] CHECKPOINT 1: Login started");
   console.log("🔵 [LOGIN] Token length:", token.length);
-  console.log("🔵 [LOGIN] API_BASE:", API_BASE);
+  console.log("🔵 [LOGIN] API_BASE_URL:", API_BASE_URL);
   
-  const loginUrl = `${API_BASE}/users/login`;
+  const loginUrl = apiUrl(`/users/login`);
   console.log("🔵 [LOGIN] CHECKPOINT 2: Using URL:", loginUrl);
   
   try {
@@ -269,7 +273,7 @@ export async function loginWithGoogle(token: string): Promise<LoginResponse> {
 
 // Update display name
 export async function updateDisplayName(displayName: string | null): Promise<User> {
-  const res = await fetch(`${API_BASE}/users/me/display-name`, {
+  const res = await fetch(apiUrl(`/users/me/display-name`), {
     method: "PUT",
     headers: getAuthHeaders(),
     body: JSON.stringify({ display_name: displayName }),
@@ -297,13 +301,13 @@ export async function getCurrentUser(): Promise<User> {
     console.log("🟡 [API] Token length:", token.length);
     console.log("🟡 [API] Token (first 20 chars):", token.substring(0, 20) + "...");
   }
-  console.log("🟡 [API] API_BASE:", API_BASE);
-  console.log("🟡 [API] Full URL:", `${API_BASE}/users/me`);
+  console.log("🟡 [API] API_BASE_URL:", API_BASE_URL);
+  console.log("🟡 [API] Full URL:", apiUrl(`/users/me`));
   
   const headers = getAuthHeaders();
   console.log("🟡 [API] Headers:", { ...headers, Authorization: headers.Authorization ? `${headers.Authorization.substring(0, 30)}...` : 'None' });
   
-  const res = await fetch(`${API_BASE}/users/me`, {
+  const res = await fetch(apiUrl(`/users/me`), {
     headers: headers,
   });
   
@@ -350,7 +354,7 @@ export async function savePracticeSession(session: PracticeSessionData): Promise
     attempts_count: session.attempts.length
   });
   
-  const res = await fetch(`${API_BASE}/users/practice-session`, {
+  const res = await fetch(apiUrl(`/users/practice-session`, {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify(session),
@@ -377,7 +381,7 @@ export async function savePracticeSession(session: PracticeSessionData): Promise
 // Get student stats
 export async function getStudentStats(): Promise<StudentStats> {
   console.log("🟡 [API] getStudentStats called");
-  const res = await fetch(`${API_BASE}/users/stats`, {
+  const res = await fetch(apiUrl(`/users/stats`, {
     headers: getAuthHeaders(),
   });
   console.log("🟡 [API] Stats response status:", res.status);
@@ -404,7 +408,7 @@ export async function getStudentStats(): Promise<StudentStats> {
 
 // Get overall leaderboard
 export async function getOverallLeaderboard(): Promise<LeaderboardEntry[]> {
-  const res = await fetch(`${API_BASE}/users/leaderboard/overall`, {
+  const res = await fetch(apiUrl(`/users/leaderboard/overall`, {
     headers: getAuthHeaders(),
   });
   return readResponse<LeaderboardEntry[]>(res);
@@ -412,7 +416,7 @@ export async function getOverallLeaderboard(): Promise<LeaderboardEntry[]> {
 
 // Get weekly leaderboard
 export async function getWeeklyLeaderboard(): Promise<LeaderboardEntry[]> {
-  const res = await fetch(`${API_BASE}/users/leaderboard/weekly`, {
+  const res = await fetch(apiUrl(`/users/leaderboard/weekly`, {
     headers: getAuthHeaders(),
   });
   return readResponse<LeaderboardEntry[]>(res);
@@ -420,7 +424,7 @@ export async function getWeeklyLeaderboard(): Promise<LeaderboardEntry[]> {
 
 // Admin: Get all students
 export async function getAllStudents(): Promise<User[]> {
-  const res = await fetch(`${API_BASE}/users/admin/students`, {
+  const res = await fetch(apiUrl(`/users/admin/students`, {
     headers: getAuthHeaders(),
   });
   return readResponse<User[]>(res);
@@ -428,7 +432,7 @@ export async function getAllStudents(): Promise<User[]> {
 
 // Admin: Get admin stats
 export async function getAdminStats(): Promise<AdminStats> {
-  const res = await fetch(`${API_BASE}/users/admin/stats`, {
+  const res = await fetch(apiUrl(`/users/admin/stats`, {
     headers: getAuthHeaders(),
   });
   return readResponse<AdminStats>(res);
@@ -436,7 +440,7 @@ export async function getAdminStats(): Promise<AdminStats> {
 
 // Admin: Get student stats
 export async function getStudentStatsAdmin(studentId: number): Promise<StudentStats> {
-  const res = await fetch(`${API_BASE}/users/admin/students/${studentId}/stats`, {
+  const res = await fetch(apiUrl(`/users/admin/students/${studentId}/stats`, {
     headers: getAuthHeaders(),
   });
   return readResponse<StudentStats>(res);
@@ -444,7 +448,7 @@ export async function getStudentStatsAdmin(studentId: number): Promise<StudentSt
 
 // Admin: Delete student
 export async function deleteStudent(studentId: number): Promise<{ message: string }> {
-  const res = await fetch(`${API_BASE}/users/admin/students/${studentId}`, {
+  const res = await fetch(apiUrl(`/users/admin/students/${studentId}`, {
     method: "DELETE",
     headers: getAuthHeaders(),
   });
@@ -453,7 +457,7 @@ export async function deleteStudent(studentId: number): Promise<{ message: strin
 
 // Admin: Update student points
 export async function updateStudentPoints(studentId: number, points: number): Promise<{ message: string; old_points: number; new_points: number }> {
-  const res = await fetch(`${API_BASE}/users/admin/students/${studentId}/points`, {
+  const res = await fetch(apiUrl(`/users/admin/students/${studentId}/points`, {
     method: "PUT",
     headers: {
       ...getAuthHeaders(),
@@ -466,7 +470,7 @@ export async function updateStudentPoints(studentId: number, points: number): Pr
 
 // Admin: Refresh leaderboard
 export async function refreshLeaderboard(): Promise<{ message: string }> {
-  const res = await fetch(`${API_BASE}/users/admin/leaderboard/refresh`, {
+  const res = await fetch(apiUrl(`/users/admin/leaderboard/refresh`, {
     method: "POST",
     headers: getAuthHeaders(),
   });
@@ -486,7 +490,7 @@ export interface DatabaseStats {
 }
 
 export async function getDatabaseStats(): Promise<DatabaseStats> {
-  const res = await fetch(`${API_BASE}/users/admin/database/stats`, {
+  const res = await fetch(apiUrl(`/users/admin/database/stats`, {
     headers: getAuthHeaders(),
   });
   return readResponse<DatabaseStats>(res);
@@ -494,7 +498,7 @@ export async function getDatabaseStats(): Promise<DatabaseStats> {
 
 // Promote self to admin (if email is in ADMIN_EMAILS)
 export async function promoteSelfToAdmin(): Promise<{ message: string; email: string; role: string }> {
-  const res = await fetch(`${API_BASE}/users/admin/promote-self`, {
+  const res = await fetch(apiUrl(`/users/admin/promote-self`, {
     method: "POST",
     headers: getAuthHeaders(),
   });
@@ -503,7 +507,7 @@ export async function promoteSelfToAdmin(): Promise<{ message: string; email: st
 
 // Get practice session details with attempts
 export async function getPracticeSessionDetail(sessionId: number): Promise<PracticeSessionDetail> {
-  const res = await fetch(`${API_BASE}/users/practice-session/${sessionId}`, {
+  const res = await fetch(apiUrl(`/users/practice-session/${sessionId}`, {
     headers: getAuthHeaders(),
   });
   return readResponse<PracticeSessionDetail>(res);

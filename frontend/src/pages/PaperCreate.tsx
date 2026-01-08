@@ -2,8 +2,7 @@ import { useState, useEffect, useRef, DragEvent } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Link, useLocation, setLocation } from "wouter";
 import { ArrowLeft, Plus, Trash2, Eye, EyeOff, FileDown, XCircle, GripVertical, Copy, ChevronUp, ChevronDown, Play } from "lucide-react";
-import { previewPaper, generatePdf, PaperConfig, BlockConfig, GeneratedBlock } from "@/lib/api";
-import { API_BASE_URL } from "@/config/api";
+import { previewPaper, generatePdf, PaperConfig, BlockConfig, GeneratedBlock, apiUrl } from "@/lib/api";
 import MathQuestion from "@/components/MathQuestion";
 
 // Helper function to generate section name based on block settings
@@ -385,7 +384,7 @@ export default function PaperCreate() {
       setLoadingPresets(true);
       setBlocks([]); // Clear blocks while loading
       // Load preset blocks from backend
-      const url = `${API_BASE_URL}/presets/${level}`;
+      const url = apiUrl(`/presets/${level}`);
       console.log(`🟦 [PRESETS] Fetching from: ${url}`);
       
       // Add timeout
@@ -4779,5 +4778,3 @@ export default function PaperCreate() {
 }
 
 
-// wherever you define API_BASE_URL
-console.log("🔥 API_BASE_URL =", import.meta.env.VITE_API_BASE_URL);
