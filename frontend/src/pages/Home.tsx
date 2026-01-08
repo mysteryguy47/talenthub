@@ -34,6 +34,14 @@ export default function Home() {
   const [expandedCourse, setExpandedCourse] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
+  // All carousel images (33 images excluding logo)
+  const carouselImages = [
+    "1.jpg", "2.jpg", "4.jpg", "6.jpg", "7.jpg", "8.jpg", "9.jpg", "10.jpg", "11.jpg", "12.jpg", "13.jpg", "14.jpg",
+    "0O9A8432.JPG", "0O9A8434.JPG", "0O9A8502.JPG", "0O9A8564.JPG", "0O9A8654.JPG", "0O9A8660.JPG", "0O9A8663.JPG",
+    "0O9A8664.JPG", "0O9A8666.JPG", "0O9A8670.JPG", "0O9A8671.JPG", "0O9A8673.JPG", "2G4A0012.JPG", "2G4A0026.JPG",
+    "2G4A0060.JPG", "2G4A0559.JPG", "2G4A0567.JPG", "2G4A0742.JPG", "773A1293.JPG", "773A1317.JPG", "773A1605.JPG", "773A1606.JPG"
+  ];
+
   // Handle explore button click - navigate and scroll to top
   const handleExploreClick = (path: string) => {
     setLocation(path);
@@ -57,10 +65,10 @@ export default function Home() {
   // Auto-scroll carousel
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentImageIndex((prev: number) => (prev === 4 ? 0 : prev + 1));
+      setCurrentImageIndex((prev: number) => (prev === carouselImages.length - 1 ? 0 : prev + 1));
     }, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [carouselImages.length]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 relative overflow-hidden">
@@ -625,108 +633,98 @@ export default function Home() {
           </div>
 
           <div className="relative group">
-            <div className="overflow-hidden rounded-2xl bg-slate-100">
+            <div className="overflow-hidden rounded-2xl bg-slate-100 shadow-xl">
               <div 
-                className="flex transition-transform duration-500 ease-in-out"
+                className="flex transition-transform duration-700 ease-in-out"
                 style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
               >
-                {/* Placeholder images */}
-                {/* Slide 1: Abacus Practice */}
-                <div className="min-w-full flex-shrink-0">
-                  <div className="aspect-video bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="w-24 h-24 mx-auto mb-4 bg-white/80 rounded-2xl flex items-center justify-center shadow-lg">
-                        <Calculator className="w-12 h-12 text-indigo-600" />
+                {/* All carousel images */}
+                {carouselImages.map((imageName, index) => (
+                  <div key={index} className="min-w-full flex-shrink-0">
+                    <img 
+                      src={`/imagesproject/${imageName}`}
+                      alt={`Talent Hub Activity ${index + 1}`}
+                      className="w-full h-[500px] md:h-[600px] object-cover"
+                      loading={index === 0 ? "eager" : "lazy"}
+                      onError={(e) => {
+                        // Fallback to gradient if image fails to load
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        const fallback = target.nextElementSibling as HTMLElement;
+                        if (fallback) fallback.style.display = 'flex';
+                      }}
+                    />
+                    <div className="w-full h-[500px] md:h-[600px] bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 items-center justify-center hidden">
+                      <div className="text-center">
+                        <div className="w-24 h-24 mx-auto mb-4 bg-white/80 rounded-2xl flex items-center justify-center shadow-lg">
+                          <Calculator className="w-12 h-12 text-indigo-600" />
+                        </div>
+                        <h3 className="text-xl font-bold text-slate-900 mb-2">Talent Hub</h3>
+                        <p className="text-slate-600">Learning in Action</p>
                       </div>
-                      <h3 className="text-xl font-bold text-slate-900 mb-2">Abacus Practice</h3>
-                      <p className="text-slate-600">Students mastering mental calculations</p>
                     </div>
                   </div>
-                </div>
-
-                {/* Slide 2: Handwriting Improvement */}
-                <div className="min-w-full flex-shrink-0">
-                  <div className="aspect-video bg-gradient-to-br from-green-100 via-emerald-100 to-teal-100 flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="w-24 h-24 mx-auto mb-4 bg-white/80 rounded-2xl flex items-center justify-center shadow-lg">
-                        <PenTool className="w-12 h-12 text-green-600" />
-                      </div>
-                      <h3 className="text-xl font-bold text-slate-900 mb-2">Handwriting Improvement</h3>
-                      <p className="text-slate-600">Structured worksheets and guided practice</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Slide 3: STEM Activities */}
-                <div className="min-w-full flex-shrink-0">
-                  <div className="aspect-video bg-gradient-to-br from-orange-100 via-red-100 to-pink-100 flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="w-24 h-24 mx-auto mb-4 bg-white/80 rounded-2xl flex items-center justify-center shadow-lg">
-                        <Rocket className="w-12 h-12 text-orange-600" />
-                      </div>
-                      <h3 className="text-xl font-bold text-slate-900 mb-2">STEM Activities</h3>
-                      <p className="text-slate-600">Hands-on learning with robotics and IoT</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Slide 4: Classroom Moments */}
-                <div className="min-w-full flex-shrink-0">
-                  <div className="aspect-video bg-gradient-to-br from-purple-100 via-pink-100 to-indigo-100 flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="w-24 h-24 mx-auto mb-4 bg-white/80 rounded-2xl flex items-center justify-center shadow-lg">
-                        <Users className="w-12 h-12 text-purple-600" />
-                      </div>
-                      <h3 className="text-xl font-bold text-slate-900 mb-2">Classroom Moments</h3>
-                      <p className="text-slate-600">Engaged learning in our physical branches</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Slide 5: Vedic Maths */}
-                <div className="min-w-full flex-shrink-0">
-                  <div className="aspect-video bg-gradient-to-br from-pink-100 via-rose-100 to-purple-100 flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="w-24 h-24 mx-auto mb-4 bg-white/80 rounded-2xl flex items-center justify-center shadow-lg">
-                        <BookOpen className="w-12 h-12 text-pink-600" />
-                      </div>
-                      <h3 className="text-xl font-bold text-slate-900 mb-2">Vedic Maths</h3>
-                      <p className="text-slate-600">Learning ancient techniques for modern minds</p>
-                    </div>
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
 
             {/* Navigation buttons */}
             <button
-              onClick={() => setCurrentImageIndex((prev: number) => (prev === 0 ? 4 : prev - 1))}
-              className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-all duration-200 opacity-70 hover:opacity-100 z-10"
+              onClick={() => setCurrentImageIndex((prev: number) => (prev === 0 ? carouselImages.length - 1 : prev - 1))}
+              className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-all duration-200 opacity-70 hover:opacity-100 z-10 group"
               aria-label="Previous image"
             >
-              <ChevronLeft className="w-5 h-5 text-slate-700" />
+              <ChevronLeft className="w-6 h-6 text-slate-700 group-hover:scale-110 transition-transform" />
             </button>
             <button
-              onClick={() => setCurrentImageIndex((prev: number) => (prev === 4 ? 0 : prev + 1))}
-              className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-all duration-200 opacity-70 hover:opacity-100 z-10"
+              onClick={() => setCurrentImageIndex((prev: number) => (prev === carouselImages.length - 1 ? 0 : prev + 1))}
+              className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-all duration-200 opacity-70 hover:opacity-100 z-10 group"
               aria-label="Next image"
             >
-              <ChevronRight className="w-5 h-5 text-slate-700" />
+              <ChevronRight className="w-6 h-6 text-slate-700 group-hover:scale-110 transition-transform" />
             </button>
 
-            {/* Dots indicator */}
-            <div className="flex justify-center gap-2 mt-6">
-              {[0, 1, 2, 3, 4].map((index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentImageIndex(index)}
-                  className={`w-2 h-2 rounded-full transition-all duration-200 ${
-                    currentImageIndex === index ? 'bg-indigo-600 w-8' : 'bg-slate-300'
-                  }`}
-                  aria-label={`Go to slide ${index + 1}`}
-                />
-              ))}
+            {/* Dot indicators - Show only 5 dots representing current position */}
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10">
+              {(() => {
+                const totalImages = carouselImages.length;
+                const dotsToShow = 5;
+                const halfDots = Math.floor(dotsToShow / 2);
+                
+                // Calculate the range of dots to show
+                let startIndex = Math.max(0, currentImageIndex - halfDots);
+                let endIndex = Math.min(totalImages - 1, currentImageIndex + halfDots);
+                
+                // Adjust if we're near the beginning
+                if (endIndex - startIndex < dotsToShow - 1) {
+                  endIndex = Math.min(totalImages - 1, startIndex + dotsToShow - 1);
+                }
+                
+                // Adjust if we're near the end
+                if (endIndex - startIndex < dotsToShow - 1) {
+                  startIndex = Math.max(0, endIndex - dotsToShow + 1);
+                }
+                
+                const dots = [];
+                for (let i = startIndex; i <= endIndex; i++) {
+                  dots.push(i);
+                }
+                
+                return dots.map((index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentImageIndex(index)}
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      index === currentImageIndex 
+                        ? "bg-white w-8" 
+                        : "bg-white/50 hover:bg-white/75 w-2"
+                    }`}
+                    aria-label={`Go to slide ${index + 1}`}
+                  />
+                ));
+              })()}
             </div>
+
           </div>
         </div>
 

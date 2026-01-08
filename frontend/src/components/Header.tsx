@@ -106,15 +106,27 @@ export default function Header() {
       }`}
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
+        <div className="flex items-center justify-between h-20 relative">
           {/* Logo + Tagline */}
           <Link 
             href="/" 
             onClick={handleLogoClick}
-            className="flex items-center gap-3 group cursor-pointer"
+            className="flex items-center gap-3 group cursor-pointer z-10"
           >
             <div className="relative">
-              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-600 via-purple-600 to-indigo-700 flex items-center justify-center shadow-md group-hover:shadow-lg transition-all duration-300 group-hover:scale-105">
+              <img 
+                src="/imagesproject/logo.ico.jpg" 
+                alt="Talent Hub Logo" 
+                className="w-11 h-11 rounded-xl object-cover shadow-md group-hover:shadow-lg transition-all duration-300 group-hover:scale-105"
+                onError={(e) => {
+                  // Fallback to icon if image fails to load
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  const fallback = target.nextElementSibling as HTMLElement;
+                  if (fallback) fallback.style.display = 'flex';
+                }}
+              />
+              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-600 via-purple-600 to-indigo-700 items-center justify-center shadow-md group-hover:shadow-lg transition-all duration-300 group-hover:scale-105 hidden">
                 <GraduationCap className="w-5.5 h-5.5 text-white" />
               </div>
             </div>
@@ -129,7 +141,7 @@ export default function Header() {
           </Link>
 
           {/* Center Navigation - Desktop */}
-          <nav className="hidden lg:flex items-center gap-1">
+          <nav className="hidden lg:flex items-center gap-1 absolute left-1/2 transform -translate-x-1/2">
             {/* Courses Dropdown */}
             <div 
               ref={coursesDropdownRef}

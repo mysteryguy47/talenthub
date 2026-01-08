@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { GraduationCap, MapPin, Heart, Calculator, BookOpen, PenTool, Rocket, FileText, Brain, Trophy, BarChart3 } from "lucide-react";
+import { GraduationCap, MapPin, Heart, Calculator, BookOpen, PenTool, Rocket, FileText, Brain, Trophy, BarChart3, Phone, Mail, Instagram } from "lucide-react";
 
 export default function Footer() {
   const [location, setLocation] = useLocation();
@@ -37,7 +37,19 @@ export default function Footer() {
               onClick={handleLogoClick}
               className="flex items-center gap-3 mb-4 group cursor-pointer"
             >
-              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
+              <img 
+                src="/imagesproject/logo.ico.jpg" 
+                alt="Talent Hub Logo" 
+                className="w-11 h-11 rounded-xl object-cover shadow-lg group-hover:shadow-xl transition-all duration-300"
+                onError={(e) => {
+                  // Fallback to icon if image fails to load
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  const fallback = target.nextElementSibling as HTMLElement;
+                  if (fallback) fallback.style.display = 'flex';
+                }}
+              />
+              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 hidden">
                 <GraduationCap className="w-6 h-6 text-white" />
               </div>
               <div>
@@ -50,9 +62,45 @@ export default function Footer() {
             <p className="text-slate-400 text-sm leading-relaxed max-w-sm mb-4">
               Transforming mathematics learning through innovative tools and personalized practice.
             </p>
-            <p className="text-slate-500 text-xs font-medium">
+            <p className="text-slate-500 text-xs font-medium mb-4">
               18+ Years of Teaching Excellence
             </p>
+            
+            {/* Social Icons */}
+            <div className="flex items-center gap-3">
+              <a 
+                href="tel:+919266117055" 
+                className="w-10 h-10 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all duration-200 group"
+                title="Call us: 9266117055"
+              >
+                <Phone className="w-5 h-5 text-white group-hover:scale-110 transition-transform" />
+              </a>
+              <a 
+                href="mailto:ayushkhurana47@gmail.com" 
+                className="w-10 h-10 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all duration-200 group"
+                title="Email us: ayushkhurana47@gmail.com"
+              >
+                <Mail className="w-5 h-5 text-white group-hover:scale-110 transition-transform" />
+              </a>
+              <a 
+                href="https://www.instagram.com/talenthub16?igsh=NzRkcHpyY2N2bTVh" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="w-10 h-10 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all duration-200 group"
+                title="Follow us on Instagram"
+              >
+                <Instagram className="w-5 h-5 text-white group-hover:scale-110 transition-transform" />
+              </a>
+              <a 
+                href="https://share.google/FtlKId4blBwgX9Q0w" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="w-10 h-10 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all duration-200 group"
+                title="Find us on Google Maps"
+              >
+                <MapPin className="w-5 h-5 text-white group-hover:scale-110 transition-transform" />
+              </a>
+            </div>
           </div>
 
           {/* Column 2: Programs */}
