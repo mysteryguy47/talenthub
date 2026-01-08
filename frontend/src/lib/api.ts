@@ -319,7 +319,17 @@ export async function getPaperAttempts(): Promise<PaperAttempt[]> {
   const res = await fetch(`${API_BASE}/papers/attempts`, {
     headers: { "Authorization": `Bearer ${token}` },
   });
-  if (!res.ok) throw new Error("Failed to get attempts");
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error("❌ [API] getPaperAttempts error:", res.status, errorText);
+    try {
+      const errorJson = JSON.parse(errorText);
+      console.error("❌ [API] Error details:", errorJson);
+    } catch {
+      // Not JSON, use text
+    }
+    throw new Error(`Failed to get attempts: ${res.status} ${errorText}`);
+  }
   return res.json();
 }
 

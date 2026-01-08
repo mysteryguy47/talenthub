@@ -22,7 +22,8 @@ import {
   ArrowLeft,
   CheckSquare,
   Square,
-  X
+  X,
+  RotateCcw
 } from "lucide-react";
 
 export default function PaperAttempt() {
@@ -45,9 +46,37 @@ export default function PaperAttempt() {
   const [showStartScreen, setShowStartScreen] = useState(false);
   const [paperReady, setPaperReady] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [reAttempting, setReAttempting] = useState(false);
   const initializedRef = useRef(false);
   
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleReAttempt = () => {
+    if (!paperConfig || !generatedBlocks || seed === null) {
+      console.error("Cannot re-attempt: missing paper data");
+      return;
+    }
+    
+    setReAttempting(true);
+    try {
+      // Store paper data in sessionStorage for re-attempt
+      const paperData = {
+        config: paperConfig,
+        blocks: generatedBlocks,
+        seed: seed
+      };
+      sessionStorage.setItem("paperAttemptData", JSON.stringify(paperData));
+      
+      // Reset state and navigate to attempt page
+      setLocation("/paper/attempt");
+      // The page will reload and pick up the data from sessionStorage
+      window.location.reload();
+    } catch (error) {
+      console.error("Failed to start re-attempt:", error);
+      alert("Failed to start re-attempt. Please try again.");
+      setReAttempting(false);
+    }
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -328,13 +357,21 @@ export default function PaperAttempt() {
               </div>
             </div>
 
-            <div className="flex gap-4">
-              <Link href="/dashboard" className="flex-1">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <button
+                onClick={handleReAttempt}
+                disabled={reAttempting || !paperConfig || !generatedBlocks || seed === null}
+                className="w-full sm:flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                <RotateCcw className={`w-5 h-5 ${reAttempting ? "animate-spin" : ""}`} />
+                {reAttempting ? "Starting..." : "Re-attempt Paper"}
+              </button>
+              <Link href="/dashboard" className="w-full sm:flex-1">
                 <button className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all">
                   View Dashboard
                 </button>
               </Link>
-              <Link href="/create" className="flex-1">
+              <Link href="/create" className="w-full sm:flex-1">
                 <button className="w-full px-6 py-3 bg-white border-2 border-slate-300 text-slate-700 rounded-lg font-semibold hover:bg-slate-50 transition-all">
                   Create New Paper
                 </button>

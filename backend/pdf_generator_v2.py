@@ -239,23 +239,54 @@ def render_vertical_questions_table(block: GeneratedBlock,
                     else:
                         display_value = format_number(operand)
                     
-                    # Build text with operator
+                    # Build cell with operator (left-aligned) and number (center-aligned)
+                    # Use a nested table structure: [operator (left) | number (center)]
                     if operator:
-                        # For now, just show operator and value together (operator will be styled via table cell)
-                        # ReportLab Paragraph HTML support is limited, so we'll use plain text
-                        text_style = create_paragraph_style(
-                            "operand", FONT_BOLD, FONT_SIZE_QUESTION_TEXT, COLOR_GRAY_800,
-                            TA_RIGHT, LINE_HEIGHT_TIGHT * FONT_SIZE_QUESTION_TEXT
+                        # Create operator paragraph (left-aligned, blue color)
+                        operator_style = create_paragraph_style(
+                            "operator", FONT_BOLD, FONT_SIZE_QUESTION_TEXT, COLOR_BLUE_600,
+                            TA_LEFT, LINE_HEIGHT_TIGHT * FONT_SIZE_QUESTION_TEXT
                         )
-                        # Show operator and value together
-                        display_text = f"{operator} {display_value}"
-                        operand_row.append(Paragraph(display_text, text_style))
+                        operator_para = Paragraph(str(operator), operator_style)
+                        
+                        # Create number paragraph (center-aligned, gray color)
+                        number_style = create_paragraph_style(
+                            "operand", FONT_BOLD, FONT_SIZE_QUESTION_TEXT, COLOR_GRAY_800,
+                            TA_CENTER, LINE_HEIGHT_TIGHT * FONT_SIZE_QUESTION_TEXT
+                        )
+                        number_para = Paragraph(display_value, number_style)
+                        
+                        # Create nested table: operator (left, ~15% width) | number (center, ~85% width)
+                        nested_table_data = [[operator_para, number_para]]
+                        # Operator column: enough space for + or - symbol (about 8-10mm)
+                        op_width = max(10 * mm, VERTICAL_COLUMN_WIDTH * 0.15)
+                        # Number column: remaining space
+                        num_width = max(VERTICAL_COLUMN_WIDTH - op_width, VERTICAL_COLUMN_WIDTH * 0.7)
+                        nested_col_widths = [op_width, num_width]
+                        
+                        nested_table = Table(
+                            nested_table_data,
+                            colWidths=nested_col_widths,
+                            style=TableStyle([
+                                ('ALIGN', (0, 0), (0, 0), 'LEFT'),  # Operator left-aligned
+                                ('ALIGN', (1, 0), (1, 0), 'CENTER'),  # Number center-aligned
+                                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                                ('LEFTPADDING', (0, 0), (0, 0), 0),  # No padding for operator
+                                ('RIGHTPADDING', (0, 0), (0, 0), 2*mm),  # Small gap after operator
+                                ('LEFTPADDING', (1, 0), (1, 0), 0),  # No padding for number
+                                ('RIGHTPADDING', (1, 0), (1, 0), 0),
+                                ('TOPPADDING', (0, 0), (-1, -1), 0),
+                                ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
+                            ])
+                        )
+                        operand_row.append(nested_table)
                     else:
-                        text_style = create_paragraph_style(
+                        # No operator, just center-aligned number
+                        number_style = create_paragraph_style(
                             "operand", FONT_BOLD, FONT_SIZE_QUESTION_TEXT, COLOR_GRAY_800,
-                            TA_RIGHT, LINE_HEIGHT_TIGHT * FONT_SIZE_QUESTION_TEXT
+                            TA_CENTER, LINE_HEIGHT_TIGHT * FONT_SIZE_QUESTION_TEXT
                         )
-                        operand_row.append(Paragraph(display_value, text_style))
+                        operand_row.append(Paragraph(display_value, number_style))
                 else:
                     operand_row.append("")  # Empty cell
             else:
@@ -335,10 +366,10 @@ def render_vertical_questions_table(block: GeneratedBlock,
             ('VALIGN', (0, 0), (-1, -1), 'TOP'),
             # Serial number row: left align
             ('ALIGN', (0, 0), (-1, 0), 'LEFT'),
-            # Operand rows: right align
-            ('ALIGN', (0, 1), (-1, -3), 'RIGHT'),
-            # Answer row: right align
-            ('ALIGN', (0, -1), (-1, -1), 'RIGHT'),
+            # Operand rows: center align (numbers are center-aligned, operators are in nested table)
+            ('ALIGN', (0, 1), (-1, -3), 'CENTER'),
+            # Answer row: center align
+            ('ALIGN', (0, -1), (-1, -1), 'CENTER'),
             # Background
             ('BACKGROUND', (0, 0), (-1, -1), COLOR_WHITE),
             # Line row: special styling (thicker bottom border)
@@ -454,14 +485,18 @@ def render_horizontal_questions_pair(question1, question_num1: int,
     
     if has_answers_col:
         # 7 columns: Q1 serial, Q1 text, Q1 answer, gap, Q2 serial, Q2 text, Q2 answer
+        # Question text column ends at 80% of question width (separator at 80%)
+        # Answer column is 20% of question width
         q1_width = question_width
         q2_width = question_width
         gap_width = 1 * mm
         serial_width = SERIAL_COLUMN_WIDTH
-        answer_width = 30 * mm
-        q1_text_width = q1_width - serial_width - answer_width
-        q2_text_width = q2_width - serial_width - answer_width
-        col_widths = [serial_width, q1_text_width, answer_width, gap_width, serial_width, q2_text_width, answer_width]
+        # Answer width is 20% of each question's width (ensures separator at 80% of question width)
+        answer_width = question_width * 0.20
+        # Question text width: 80% of question width minus serial width
+        q1_text_width = (q1_width * 0.80) - serial_width
+        q2_text_width = (q2_width * 0.80) - serial_width
+        col_widths = [serial_width, max(q1_text_width, 30*mm), answer_width, gap_width, serial_width, max(q2_text_width, 30*mm), answer_width]
     else:
         # 5 columns: Q1 serial, Q1 text, gap, Q2 serial, Q2 text
         q1_width = question_width
@@ -597,10 +632,13 @@ def render_horizontal_question_table(question, question_num: int,
         answer_text = format_number(question.answer)
         answer_cell = Paragraph(answer_text, answer_style)
         table_data[0].append(answer_cell)
-        # Column widths: ReportLab handles padding internally, so just ensure widths sum to USABLE_WIDTH
-        answer_col_width = 60 * mm  # Reduced from 80mm to ensure fit
-        available_for_question = USABLE_WIDTH - SERIAL_COLUMN_WIDTH - answer_col_width
-        col_widths = [SERIAL_COLUMN_WIDTH, max(available_for_question, 50*mm), answer_col_width]
+        # Column widths: Question text column ends at 80% of total width (separator at 80%)
+        # Answer column is 20% of total width
+        # This ensures consistent separator position regardless of answer length
+        total_width = USABLE_WIDTH
+        answer_col_width = total_width * 0.20  # 20% from right
+        question_text_width = total_width * 0.80 - SERIAL_COLUMN_WIDTH  # 80% total minus serial
+        col_widths = [SERIAL_COLUMN_WIDTH, max(question_text_width, 50*mm), answer_col_width]
     else:
         # Column widths: ReportLab handles padding internally, so just ensure widths sum to USABLE_WIDTH
         available_for_question = USABLE_WIDTH - SERIAL_COLUMN_WIDTH

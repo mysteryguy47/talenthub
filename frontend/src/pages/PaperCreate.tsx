@@ -45,9 +45,9 @@ function generateSectionName(block: BlockConfig): string {
   } else if (block.type === "decimal_add_sub") {
     return `Decimal Add/Sub ${block.constraints.digits || 2}D ${block.constraints.rows || 3}R`;
   } else if (block.type === "decimal_division") {
-    const multiplicand = block.constraints.multiplicandDigits || 2;
-    const multiplier = block.constraints.multiplierDigits || 1;
-    return `Decimal Division (${multiplicand}÷${multiplier})`;
+    const dividend = block.constraints.dividendDigits ?? 2;
+    const divisor = block.constraints.divisorDigits ?? 1;
+    return `Decimal Division (${dividend}÷${divisor})`;
   } else if (block.type === "direct_add_sub") {
     return `Direct Add/Sub ${block.constraints.digits || 1}D ${block.constraints.rows || 3}R`;
   } else if (block.type === "small_friends_add_sub") {
@@ -533,6 +533,43 @@ export default function PaperCreate() {
     };
   }, [level, isBasicPage, isJuniorPage, isAdvancedPage]);
 
+  // Helper function to get level display name
+  const getLevelDisplayName = (level: PaperConfig["level"]): string => {
+    if (level === "Custom") return "";
+    if (level.startsWith("AB-")) {
+      const levelNum = parseInt(level.split("-")[1]);
+      if (levelNum >= 1 && levelNum <= 6) {
+        return `Basic Level ${levelNum}`;
+      } else if (levelNum >= 7 && levelNum <= 10) {
+        return `Advanced Level ${levelNum}`;
+      }
+    }
+    return "";
+  };
+
+  // Update title when level changes (for preset levels)
+  useEffect(() => {
+    if (level !== "Custom") {
+      const levelDisplayName = getLevelDisplayName(level);
+      if (levelDisplayName) {
+        setTitle(prevTitle => {
+          // Remove any existing level name from title
+          const baseTitle = prevTitle.replace(/\s*-\s*(Basic|Advanced)\s+Level\s+\d+/, "").trim();
+          // Add level name if not already present
+          if (!baseTitle.includes(levelDisplayName)) {
+            return `${baseTitle} - ${levelDisplayName}`;
+          }
+          return prevTitle; // Keep as is if level name already present
+        });
+      }
+    } else {
+      // Remove level name when switching to Custom
+      setTitle(prevTitle => {
+        return prevTitle.replace(/\s*-\s*(Basic|Advanced)\s+Level\s+\d+/, "").trim();
+      });
+    }
+  }, [level]); // Only depend on level, not title to avoid loops
+
   // Update block types and titles when Vedic level changes
   useEffect(() => {
     // Skip on initial mount or if level hasn't actually changed
@@ -768,6 +805,8 @@ export default function PaperCreate() {
         updatedBlock.constraints.multiplierDigits = 2;  // GCD second: 2
       } else if (updates.type === "percentage") {
         // Always reset to percentage default when switching to percentage
+        updatedBlock.constraints.percentageMin = 1;  // Percentage min: 1
+        updatedBlock.constraints.percentageMax = 100;  // Percentage max: 100
         updatedBlock.constraints.numberDigits = 4;  // Percentage numberDigits: 4
       } else if (updates.type === "vedic_tables") {
         // Always reset to vedic_tables default when switching to vedic_tables
@@ -814,7 +853,8 @@ export default function PaperCreate() {
       updatedBlock.title = updates.title;
     } else if (typeChanged || constraintsActuallyChanged) {
       // Type or constraints changed - auto-regenerate if title was auto-generated
-      if (oldBlock.title === oldAutoTitle || !oldBlock.title || oldBlock.title.trim() === "") {
+      // Always update title if it was empty, matches old auto title, or if type changed (user is selecting a new operation)
+      if (typeChanged || oldBlock.title === oldAutoTitle || !oldBlock.title || oldBlock.title.trim() === "") {
         updatedBlock.title = newAutoTitle;
       }
       // Otherwise, keep the existing custom title
@@ -2424,56 +2464,56 @@ export default function PaperCreate() {
                             <input
                               type="text"
                               value={
-                                block.constraints.multiplicandDigits === -1 ? "" : String(block.constraints.multiplicandDigits ?? 2)
+                                block.constraints.dividendDigits === -1 ? "" : String(block.constraints.dividendDigits ?? 2)
                               }
                               onChange={(e) => {
                                 const val = e.target.value;
                                 if (val === "" || /^\d+$/.test(val)) {
                                   if (val === "") {
-                                    setFieldError(index, "multiplicandDigits", null);
+                                    setFieldError(index, "dividendDigits", null);
                                     updateBlock(index, {
-                                      constraints: { ...block.constraints, multiplicandDigits: -1 as any },
+                                      constraints: { ...block.constraints, dividendDigits: -1 as any },
                                     });
                                   } else {
                                     const numVal = parseInt(val);
                                     updateBlock(index, {
-                                      constraints: { ...block.constraints, multiplicandDigits: numVal },
+                                      constraints: { ...block.constraints, dividendDigits: numVal },
                                     });
                                     // Real-time validation
                                     if (numVal < 1) {
-                                      setFieldError(index, "multiplicandDigits", "Minimum value for Dividend Digits is 1");
+                                      setFieldError(index, "dividendDigits", "Minimum value for Dividend Digits is 1");
                                     } else if (numVal > 20) {
-                                      setFieldError(index, "multiplicandDigits", "Maximum value for Dividend Digits is 20");
+                                      setFieldError(index, "dividendDigits", "Maximum value for Dividend Digits is 20");
                                     } else {
-                                      setFieldError(index, "multiplicandDigits", null);
+                                      setFieldError(index, "dividendDigits", null);
                                     }
                                   }
                                 }
                               }}
                               onBlur={(e) => {
                                 const val = e.target.value;
-                                if (val === "" || isNaN(Number(val)) || block.constraints.multiplicandDigits === -1) {
-                                  setFieldError(index, "multiplicandDigits", "Dividend Digits is required");
+                                if (val === "" || isNaN(Number(val)) || block.constraints.dividendDigits === -1) {
+                                  setFieldError(index, "dividendDigits", "Dividend Digits is required");
                                   updateBlock(index, {
-                                    constraints: { ...block.constraints, multiplicandDigits: 2 },
+                                    constraints: { ...block.constraints, dividendDigits: 2 },
                                   });
                                 } else {
                                   const numVal = parseInt(val) || 2;
                                   if (numVal < 1 || numVal > 20) {
                                     updateBlock(index, {
-                                      constraints: { ...block.constraints, multiplicandDigits: Math.max(1, Math.min(20, numVal)) },
+                                      constraints: { ...block.constraints, dividendDigits: Math.max(1, Math.min(20, numVal)) },
                                     });
                                   }
                                 }
                               }}
                               className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 transition-all outline-none bg-white ${
-                                getFieldError(index, "multiplicandDigits")
+                                getFieldError(index, "dividendDigits")
                                   ? "border-red-300 focus:border-red-500 focus:ring-red-200"
                                   : "border-gray-200 focus:border-blue-500 focus:ring-blue-200"
                               }`}
                             />
-                            {getFieldError(index, "multiplicandDigits") && (
-                              <p className="mt-1 text-sm text-red-600">{getFieldError(index, "multiplicandDigits")}</p>
+                            {getFieldError(index, "dividendDigits") && (
+                              <p className="mt-1 text-sm text-red-600">{getFieldError(index, "dividendDigits")}</p>
                             )}
                           </div>
                           <div>
@@ -2483,56 +2523,56 @@ export default function PaperCreate() {
                             <input
                               type="text"
                               value={
-                                block.constraints.multiplierDigits === -1 ? "" : String(block.constraints.multiplierDigits ?? 1)
+                                block.constraints.divisorDigits === -1 ? "" : String(block.constraints.divisorDigits ?? 1)
                               }
                               onChange={(e) => {
                                 const val = e.target.value;
                                 if (val === "" || /^\d+$/.test(val)) {
                                   if (val === "") {
-                                    setFieldError(index, "multiplierDigits", null);
+                                    setFieldError(index, "divisorDigits", null);
                                     updateBlock(index, {
-                                      constraints: { ...block.constraints, multiplierDigits: -1 as any },
+                                      constraints: { ...block.constraints, divisorDigits: -1 as any },
                                     });
                                   } else {
                                     const numVal = parseInt(val);
                                     updateBlock(index, {
-                                      constraints: { ...block.constraints, multiplierDigits: numVal },
+                                      constraints: { ...block.constraints, divisorDigits: numVal },
                                     });
                                     // Real-time validation
                                     if (numVal < 1) {
-                                      setFieldError(index, "multiplierDigits", "Minimum value for Divisor Digits is 1");
+                                      setFieldError(index, "divisorDigits", "Minimum value for Divisor Digits is 1");
                                     } else if (numVal > 20) {
-                                      setFieldError(index, "multiplierDigits", "Maximum value for Divisor Digits is 20");
+                                      setFieldError(index, "divisorDigits", "Maximum value for Divisor Digits is 20");
                                     } else {
-                                      setFieldError(index, "multiplierDigits", null);
+                                      setFieldError(index, "divisorDigits", null);
                                     }
                                   }
                                 }
                               }}
                               onBlur={(e) => {
                                 const val = e.target.value;
-                                if (val === "" || isNaN(Number(val)) || block.constraints.multiplierDigits === -1) {
-                                  setFieldError(index, "multiplierDigits", "Divisor Digits is required");
+                                if (val === "" || isNaN(Number(val)) || block.constraints.divisorDigits === -1) {
+                                  setFieldError(index, "divisorDigits", "Divisor Digits is required");
                                   updateBlock(index, {
-                                    constraints: { ...block.constraints, multiplierDigits: 1 },
+                                    constraints: { ...block.constraints, divisorDigits: 1 },
                                   });
                                 } else {
                                   const numVal = parseInt(val) || 1;
                                   if (numVal < 1 || numVal > 20) {
                                     updateBlock(index, {
-                                      constraints: { ...block.constraints, multiplierDigits: Math.max(1, Math.min(20, numVal)) },
+                                      constraints: { ...block.constraints, divisorDigits: Math.max(1, Math.min(20, numVal)) },
                                     });
                                   }
                                 }
                               }}
                               className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 transition-all outline-none bg-white ${
-                                getFieldError(index, "multiplierDigits")
+                                getFieldError(index, "divisorDigits")
                                   ? "border-red-300 focus:border-red-500 focus:ring-red-200"
                                   : "border-gray-200 focus:border-blue-500 focus:ring-blue-200"
                               }`}
                             />
-                            {getFieldError(index, "multiplierDigits") && (
-                              <p className="mt-1 text-sm text-red-600">{getFieldError(index, "multiplierDigits")}</p>
+                            {getFieldError(index, "divisorDigits") && (
+                              <p className="mt-1 text-sm text-red-600">{getFieldError(index, "divisorDigits")}</p>
                             )}
                           </div>
                         </>
@@ -4565,98 +4605,111 @@ export default function PaperCreate() {
                           {block.config.title || `Section ${originalIndex + 1}`}
                         </h3>
                         {isVerticalBlock ? (
-                          // 10 columns for vertical questions (add/sub) - single flat table for Excel compatibility
+                          // 10 columns for vertical questions (add/sub) - split into multiple rows if needed
                           <div className="overflow-x-auto">
-                            <table className="w-full border-collapse" style={{ tableLayout: 'fixed' }}>
-                              <tbody>
-                                {/* Serial number row */}
-                                <tr>
-                                  {block.questions.map((q) => (
-                                    <td key={`sno-${q.id}`} className="p-1 align-center border border-gray-200 bg-white text-center" style={{ width: '10%' }}>
-                                      <span className="font-bold text-sm text-blue-700">{q.id}.</span>
-                                    </td>
-                                  ))}
-                                  {Array.from({ length: Math.max(0, 10 - block.questions.length) }).map((_, idx) => (
-                                    <td key={`empty-sno-${idx}`} className="p-1 border border-gray-200" style={{ width: '10%' }}></td>
-                                  ))}
-                                </tr>
-                                {/* Question content rows - render each question's operands */}
-                                {block.questions.length > 0 && (() => {
-                                  const maxOperands = Math.max(...block.questions.map(q => q.operands.length));
-                                  const rows = [];
-                                  for (let rowIdx = 0; rowIdx < maxOperands; rowIdx++) {
-                                    rows.push(
-                                      <tr key={`operand-${rowIdx}`}>
-                                        {block.questions.map((q) => {
-                                          const op = q.operands[rowIdx];
-                                          if (op === undefined) {
-                                            return <td key={`empty-${q.id}-${rowIdx}`} className="p-1 border border-gray-200 bg-white" style={{ width: '10%' }}></td>;
-                                          }
-                                          
-                                          // Determine operator
-                                          let operator = null;
-                                          if (q.operators && q.operators.length > 0 && rowIdx > 0) {
-                                            operator = q.operators[rowIdx - 1];
-                                          } else if (!q.operators) {
-                                            if (q.operator === "-" && rowIdx > 0) {
-                                              operator = q.operator;
-                                            } else if (q.operator !== "-" && rowIdx === q.operands.length - 1) {
-                                              operator = q.operator;
-                                            }
-                                          }
-                                          
-                                          return (
-                                            <td key={`${q.id}-${rowIdx}`} className="p-1 border border-gray-200 bg-white text-right" style={{ width: '10%' }}>
-                                              <div className="font-mono text-sm font-semibold text-gray-800 leading-tight">
-                                                {operator && <span className="mr-1 text-blue-600">{operator}</span>}
-                                                {op}
-                                              </div>
-                                            </td>
-                                          );
-                                        })}
-                                        {Array.from({ length: Math.max(0, 10 - block.questions.length) }).map((_, idx) => (
-                                          <td key={`empty-op-${idx}-${rowIdx}`} className="p-1 border border-gray-200" style={{ width: '10%' }}></td>
-                                        ))}
-                                      </tr>
-                                    );
-                                  }
-                                  
-                                  // Line row
+                            {(() => {
+                              // Split questions into rows of max 10
+                              const questionsPerRow = 10;
+                              const questionRows: typeof block.questions[] = [];
+                              for (let i = 0; i < block.questions.length; i += questionsPerRow) {
+                                questionRows.push(block.questions.slice(i, i + questionsPerRow));
+                              }
+                              
+                              return questionRows.map((questionRow, rowIndex) => {
+                                const maxOperands = Math.max(...questionRow.map(q => q.operands.length));
+                                const rows = [];
+                                
+                                // Serial number row
+                                rows.push(
+                                  <tr key={`sno-row-${rowIndex}`}>
+                                    {questionRow.map((q) => (
+                                      <td key={`sno-${q.id}`} className="p-1 align-center border border-gray-200 bg-white text-center" style={{ width: '10%' }}>
+                                        <span className="font-bold text-sm text-blue-700">{q.id}.</span>
+                                      </td>
+                                    ))}
+                                    {Array.from({ length: Math.max(0, questionsPerRow - questionRow.length) }).map((_, idx) => (
+                                      <td key={`empty-sno-${idx}`} className="p-1 border border-gray-200" style={{ width: '10%' }}></td>
+                                    ))}
+                                  </tr>
+                                );
+                                
+                                // Question content rows
+                                for (let rowIdx = 0; rowIdx < maxOperands; rowIdx++) {
                                   rows.push(
-                                    <tr key="line">
-                                      {block.questions.map((q) => (
-                                        <td key={`line-${q.id}`} className="p-1 border border-gray-200 bg-white" style={{ width: '10%' }}>
-                                          <div className="border-t border-gray-400 w-full"></div>
-                                        </td>
-                                      ))}
-                                      {Array.from({ length: Math.max(0, 10 - block.questions.length) }).map((_, idx) => (
-                                        <td key={`empty-line-${idx}`} className="p-1 border border-gray-200" style={{ width: '10%' }}></td>
+                                    <tr key={`operand-row-${rowIndex}-${rowIdx}`}>
+                                      {questionRow.map((q) => {
+                                        const op = q.operands[rowIdx];
+                                        if (op === undefined) {
+                                          return <td key={`empty-${q.id}-${rowIdx}`} className="p-1 border border-gray-200 bg-white" style={{ width: '10%' }}></td>;
+                                        }
+                                        
+                                        // Determine operator
+                                        let operator = null;
+                                        if (q.operators && q.operators.length > 0 && rowIdx > 0) {
+                                          operator = q.operators[rowIdx - 1];
+                                        } else if (!q.operators) {
+                                          if (q.operator === "-" && rowIdx > 0) {
+                                            operator = q.operator;
+                                          } else if (q.operator !== "-" && rowIdx === q.operands.length - 1) {
+                                            operator = q.operator;
+                                          }
+                                        }
+                                        
+                                        return (
+                                          <td key={`${q.id}-${rowIdx}`} className="p-1 border border-gray-200 bg-white text-right" style={{ width: '10%' }}>
+                                            <div className="font-mono text-sm font-semibold text-gray-800 leading-tight">
+                                              {operator && <span className="mr-1 text-blue-600">{operator}</span>}
+                                              {op}
+                                            </div>
+                                          </td>
+                                        );
+                                      })}
+                                      {Array.from({ length: Math.max(0, questionsPerRow - questionRow.length) }).map((_, idx) => (
+                                        <td key={`empty-op-${idx}-${rowIdx}`} className="p-1 border border-gray-200" style={{ width: '10%' }}></td>
                                       ))}
                                     </tr>
                                   );
-                                  
-                                  // Answer row - always show space (empty when answers hidden)
-                                  rows.push(
-                                    <tr key="answer">
-                                      {block.questions.map((q) => (
-                                        <td key={`answer-${q.id}`} className="p-1 border border-gray-200 bg-white text-right" style={{ width: '10%', minHeight: '1.2rem' }}>
-                                          <div style={{ minHeight: '1.2rem' }}>
-                                            {showAnswers && (
-                                              <div className="text-gray-600 font-mono text-sm font-bold">{q.answer}</div>
-                                            )}
-                                          </div>
-                                        </td>
-                                      ))}
-                                      {Array.from({ length: Math.max(0, 10 - block.questions.length) }).map((_, idx) => (
-                                        <td key={`empty-answer-${idx}`} className="p-1 border border-gray-200" style={{ width: '10%' }}></td>
-                                      ))}
-                                    </tr>
-                                  );
-                                  
-                                  return rows;
-                                })()}
-                              </tbody>
-                            </table>
+                                }
+                                
+                                // Line row
+                                rows.push(
+                                  <tr key={`line-row-${rowIndex}`}>
+                                    {questionRow.map((q) => (
+                                      <td key={`line-${q.id}`} className="p-1 border border-gray-200 bg-white" style={{ width: '10%' }}>
+                                        <div className="border-t border-gray-400 w-full"></div>
+                                      </td>
+                                    ))}
+                                    {Array.from({ length: Math.max(0, questionsPerRow - questionRow.length) }).map((_, idx) => (
+                                      <td key={`empty-line-${idx}`} className="p-1 border border-gray-200" style={{ width: '10%' }}></td>
+                                    ))}
+                                  </tr>
+                                );
+                                
+                                // Answer row
+                                rows.push(
+                                  <tr key={`answer-row-${rowIndex}`}>
+                                    {questionRow.map((q) => (
+                                      <td key={`answer-${q.id}`} className="p-1 border border-gray-200 bg-white text-right" style={{ width: '10%', minHeight: '1.2rem' }}>
+                                        <div style={{ minHeight: '1.2rem' }}>
+                                          {showAnswers && (
+                                            <div className="text-gray-600 font-mono text-sm font-bold">{q.answer}</div>
+                                          )}
+                                        </div>
+                                      </td>
+                                    ))}
+                                    {Array.from({ length: Math.max(0, questionsPerRow - questionRow.length) }).map((_, idx) => (
+                                      <td key={`empty-answer-${idx}`} className="p-1 border border-gray-200" style={{ width: '10%' }}></td>
+                                    ))}
+                                  </tr>
+                                );
+                                
+                                return (
+                                  <table key={`table-row-${rowIndex}`} className="w-full border-collapse mb-4" style={{ tableLayout: 'fixed' }}>
+                                    <tbody>{rows}</tbody>
+                                  </table>
+                                );
+                              });
+                            })()}
                           </div>
                         ) : (
                           // 1 column with multiple rows for horizontal questions (multiplication, etc.)

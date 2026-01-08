@@ -62,6 +62,11 @@ export default function MathQuestion({ question, showAnswer = false, hideSerialN
     <span className="font-bold text-sm text-blue-700 mr-2">{question.id}.</span>
   );
   
+  // SIMPLEST CHECK FIRST: If text contains decimals and is vertical, it's decimal_add_sub
+  // This is the most reliable check since backend always sets text with decimals for decimal_add_sub
+  const hasDecimalText = question.text && question.text.includes('.');
+  const isVerticalWithDecimals = question.isVertical && hasDecimalText;
+  
   // For decimal_add_sub, use the text field directly (it's already formatted with decimals)
   // Check for decimal_add_sub by operator "±" (Unicode: U+00B1, char code 177)
   // Also check if operator might be encoded differently or if operands are clearly decimal format
@@ -90,20 +95,47 @@ export default function MathQuestion({ question, showAnswer = false, hideSerialN
     hasDecimalFormatOperands // MUST have decimal format operands (all multiples of 10)
   );
   
-  if (isDecimalAddSub) {
+  // PRIORITY: If vertical question has text with decimals, treat as decimal_add_sub
+  if (isVerticalWithDecimals || isDecimalAddSub) {
     // Use table structure for Excel compatibility
-    // ALWAYS convert operands from integer format (stored as * 10) to decimal format
-    // This ensures decimals are always shown, regardless of text field
-    const lines = question.operands.map((op, idx) => {
-      // ALWAYS convert from integer format (stored as * 10) to decimal with 1 decimal place
-      const val = (op / 10).toFixed(1);
-      if (idx === 0) {
-        return val;
+    // ALWAYS prefer text field if it contains decimal points (backend-generated format)
+    let lines: string[];
+    if (hasDecimalText) {
+      // Use the text field directly - it's already formatted with decimals
+      lines = question.text.split('\n').filter(line => line.trim() !== '');
+      // Debug log (remove in production)
+      // console.log('Using text field for decimal_add_sub:', lines);
+    } else if (hasDecimalFormatOperands) {
+      // Fallback: convert operands from integer format (stored as * 10) to decimal format
+      lines = question.operands.map((op, idx) => {
+        // ALWAYS convert from integer format (stored as * 10) to decimal with 1 decimal place
+        const val = (op / 10).toFixed(1);
+        if (idx === 0) {
+          return val;
+        } else {
+          const operator = question.operators?.[idx - 1] || "+";
+          return `${operator} ${val}`;
+        }
+      });
+      // Debug log (remove in production)
+      // console.log('Converting operands to decimals:', lines);
+    } else {
+      // Last resort: try to parse from text even without decimals, or convert operands
+      if (question.text) {
+        lines = question.text.split('\n').filter(line => line.trim() !== '');
       } else {
-        const operator = question.operators?.[idx - 1] || "+";
-        return `${operator} ${val}`;
+        // Convert operands as fallback
+        lines = question.operands.map((op, idx) => {
+          const val = (op / 10).toFixed(1);
+          if (idx === 0) {
+            return val;
+          } else {
+            const operator = question.operators?.[idx - 1] || "+";
+            return `${operator} ${val}`;
+          }
+        });
       }
-    });
+    }
     
     return (
       <table className="w-full border-collapse bg-white rounded border border-gray-200 hover:border-blue-300 transition-colors shadow-sm">
@@ -162,6 +194,19 @@ export default function MathQuestion({ question, showAnswer = false, hideSerialN
       allOperandsAreMultiplesOf10 // MUST have decimal format operands
     );
     
+    // Check if text field exists and contains decimal points (backend-generated format)
+    const hasDecimalText = question.text && question.text.includes('.');
+    
+    // Check if this is decimal_add_sub by checking operator and operands
+    const isDecimalFormatVertical = (
+      (operatorStr === "±" || 
+       operatorStr === "\u00B1" ||
+       operatorCharCode === 0x00B1 ||
+       operatorCharCode === 177 ||
+       (operatorStr && operatorStr.includes("±"))) &&
+      allOperandsAreMultiplesOf10
+    );
+    
     // Use table structure for Excel compatibility - serial number in separate column
     return (
       <table className="w-full border-collapse bg-white rounded border border-gray-200 hover:border-blue-300 transition-colors shadow-sm">
@@ -175,64 +220,96 @@ export default function MathQuestion({ question, showAnswer = false, hideSerialN
             )}
             <td className="p-1.5">
               <div className="flex flex-col items-end space-y-0.5">
-                {question.operands.map((op, idx) => {
-                  // Only convert to decimal if:
-                  // 1. Operator is ± (explicit decimal_add_sub indicator), OR
-                  // 2. ALL operands are multiples of 10 AND >= 10 AND <= 9990 (not basic add/sub like 1, 8, 4)
-                  // Basic add/sub: operands are 1-9, 10-99, 100-999, etc. (NOT multiples of 10 unless they're actually decimals)
-                  // Decimal add/sub: operands are stored as 10, 20, 30... (multiples of 10 representing 1.0, 2.0, 3.0...)
-                  const allOperandsMultipleOf10 = question.operands.every(o => 
-                    o % 10 === 0 && o >= 10 && o <= 9990 && o !== 0
-                  );
-                  // Additional check: if any operand is < 10 and not a multiple of 10, it's NOT decimal
-                  const hasSmallNonMultipleOperand = question.operands.some(o => 
-                    o < 10 && o % 10 !== 0
-                  );
-                  const hasMixedOperators = question.operators && question.operators.length > 0;
-                  
-                  // Only treat as decimal if operator is ± OR (all are multiples of 10 AND no small non-multiple operands)
-                  const shouldConvertToDecimal = isDecimalFormat || 
-                    (allOperandsMultipleOf10 && hasMixedOperators && !hasSmallNonMultipleOperand);
-                  
-                  const displayValue = shouldConvertToDecimal 
-                    ? (op / 10).toFixed(1) 
-                    : formatNumber(op);
-                  
-                  // Handle mixed operations (add_sub)
-                  if (question.operators && question.operators.length > 0) {
-                    if (idx === 0) {
-                      // First operand has no operator
-                      return (
-                        <div key={idx} className={`text-right font-mono ${largeFont ? 'text-xl' : 'text-base'} font-semibold text-gray-800 leading-tight`}>
-                          {displayValue}
-                        </div>
-                      );
-                    } else {
-                      // Subsequent operands have their operators
-                      const operator = question.operators[idx - 1];
-                      return (
-                        <div key={idx} className={`text-right font-mono ${largeFont ? 'text-xl' : 'text-base'} font-semibold text-gray-800 leading-tight`}>
-                          <span className="mr-1 text-blue-600">{operator}</span>
-                          {displayValue}
-                        </div>
-                      );
+                {(hasDecimalText || isDecimalFormatVertical) ? (
+                  // Use text field directly if it contains decimals, OR convert operands if they're multiples of 10
+                  hasDecimalText ? (
+                    question.text.split('\n').filter(line => line.trim() !== '').map((line, idx) => (
+                      <div key={idx} className={`text-right font-mono ${largeFont ? 'text-xl' : 'text-base'} font-semibold text-gray-800 leading-tight`}>
+                        {line}
+                      </div>
+                    ))
+                  ) : (
+                    // Convert operands from integer format to decimal
+                    question.operands.map((op, idx) => {
+                      const val = (op / 10).toFixed(1);
+                      if (idx === 0) {
+                        return (
+                          <div key={idx} className={`text-right font-mono ${largeFont ? 'text-xl' : 'text-base'} font-semibold text-gray-800 leading-tight`}>
+                            {val}
+                          </div>
+                        );
+                      } else {
+                        const operator = question.operators?.[idx - 1] || "+";
+                        return (
+                          <div key={idx} className={`text-right font-mono ${largeFont ? 'text-xl' : 'text-base'} font-semibold text-gray-800 leading-tight`}>
+                            <span className="mr-1 text-blue-600">{operator}</span>
+                            {val}
+                          </div>
+                        );
+                      }
+                    })
+                  )
+                ) : (
+                  // Fallback: reconstruct from operands (regular add/sub)
+                  question.operands.map((op, idx) => {
+                    // Only convert to decimal if:
+                    // 1. Operator is ± (explicit decimal_add_sub indicator), OR
+                    // 2. ALL operands are multiples of 10 AND >= 10 AND <= 9990 (not basic add/sub like 1, 8, 4)
+                    // Basic add/sub: operands are 1-9, 10-99, 100-999, etc. (NOT multiples of 10 unless they're actually decimals)
+                    // Decimal add/sub: operands are stored as 10, 20, 30... (multiples of 10 representing 1.0, 2.0, 3.0...)
+                    const allOperandsMultipleOf10 = question.operands.every(o => 
+                      o % 10 === 0 && o >= 10 && o <= 9990 && o !== 0
+                    );
+                    // Additional check: if any operand is < 10 and not a multiple of 10, it's NOT decimal
+                    const hasSmallNonMultipleOperand = question.operands.some(o => 
+                      o < 10 && o % 10 !== 0
+                    );
+                    const hasMixedOperators = question.operators && question.operators.length > 0;
+                    
+                    // Only treat as decimal if operator is ± OR (all are multiples of 10 AND no small non-multiple operands)
+                    const shouldConvertToDecimal = isDecimalFormat || 
+                      (allOperandsMultipleOf10 && hasMixedOperators && !hasSmallNonMultipleOperand);
+                    
+                    const displayValue = shouldConvertToDecimal 
+                      ? (op / 10).toFixed(1) 
+                      : formatNumber(op);
+                    
+                    // Handle mixed operations (add_sub)
+                    if (question.operators && question.operators.length > 0) {
+                      if (idx === 0) {
+                        // First operand has no operator
+                        return (
+                          <div key={idx} className={`text-right font-mono ${largeFont ? 'text-xl' : 'text-base'} font-semibold text-gray-800 leading-tight`}>
+                            {displayValue}
+                          </div>
+                        );
+                      } else {
+                        // Subsequent operands have their operators
+                        const operator = question.operators[idx - 1];
+                        return (
+                          <div key={idx} className={`text-right font-mono ${largeFont ? 'text-xl' : 'text-base'} font-semibold text-gray-800 leading-tight`}>
+                            <span className="mr-1 text-blue-600">{operator}</span>
+                            {displayValue}
+                          </div>
+                        );
+                      }
                     }
-                  }
-                  
-                  // Handle single operator type (addition or subtraction)
-                  const showOperator = 
-                    (question.operator === "-" && idx > 0) || 
-                    (question.operator !== "-" && idx === question.operands.length - 1);
-                  
-                  return (
-                    <div key={idx} className={`text-right font-mono ${largeFont ? 'text-xl' : 'text-base'} font-semibold text-gray-800 leading-tight`}>
-                      {showOperator && (
-                        <span className="mr-1 text-blue-600">{question.operator}</span>
-                      )}
-                      {displayValue}
-                    </div>
-                  );
-                })}
+                    
+                    // Handle single operator type (addition or subtraction)
+                    const showOperator = 
+                      (question.operator === "-" && idx > 0) || 
+                      (question.operator !== "-" && idx === question.operands.length - 1);
+                    
+                    return (
+                      <div key={idx} className={`text-right font-mono ${largeFont ? 'text-xl' : 'text-base'} font-semibold text-gray-800 leading-tight`}>
+                        {showOperator && (
+                          <span className="mr-1 text-blue-600">{question.operator}</span>
+                        )}
+                        {displayValue}
+                      </div>
+                    );
+                  })
+                )}
                 <div className="border-t border-gray-400 w-full my-0.5"></div>
                 {/* Always show answer space (blank if answer not shown) */}
                 <div className="min-h-[1.2rem] text-right w-full">

@@ -1,5 +1,5 @@
 """FastAPI main application."""
-from fastapi import FastAPI, Depends, HTTPException, status, Request
+from fastapi import FastAPI, Depends, HTTPException, status, Request, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.exceptions import RequestValidationError
@@ -106,6 +106,43 @@ async def list_papers(db: Session = Depends(get_db)):
     return papers
 
 
+# IMPORTANT: This route must come BEFORE /api/papers/{paper_id} to avoid route conflicts
+@app.get("/api/papers/attempts", response_model=List[PaperAttemptResponse])
+async def get_paper_attempts(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    limit: int = Query(20, ge=1, le=100)
+):
+    """Get user's paper attempt history."""
+    try:
+        attempts = db.query(PaperAttempt).filter(
+            PaperAttempt.user_id == current_user.id
+        ).order_by(PaperAttempt.started_at.desc()).limit(limit).all()
+        
+        print(f"✅ [PAPER_ATTEMPTS] Found {len(attempts)} attempts for user {current_user.id}")
+        
+        # Validate and convert each attempt
+        result = []
+        for attempt in attempts:
+            try:
+                validated = PaperAttemptResponse.model_validate(attempt)
+                result.append(validated)
+            except Exception as e:
+                print(f"❌ [PAPER_ATTEMPTS] Error validating attempt {attempt.id}: {e}")
+                import traceback
+                traceback.print_exc()
+                # Skip invalid attempts but continue processing others
+                continue
+        
+        print(f"✅ [PAPER_ATTEMPTS] Returning {len(result)} validated attempts")
+        return result
+    except Exception as e:
+        print(f"❌ [PAPER_ATTEMPTS] Error in get_paper_attempts: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to get paper attempts: {str(e)}")
+
+
 @app.get("/api/papers/{paper_id}", response_model=PaperResponse)
 async def get_paper(paper_id: int, db: Session = Depends(get_db)):
     """Get a single paper by ID."""
@@ -150,6 +187,23 @@ async def get_preset_blocks(level: str):
         raise HTTPException(status_code=500, detail=error_msg)
 
 
+def get_level_display_name(level: str) -> str:
+    """Convert level code to display name."""
+    if level == "Custom":
+        return ""
+    if level.startswith("AB-"):
+        try:
+            level_num = int(level.split("-")[1])
+            if 1 <= level_num <= 6:
+                return f"Basic Level {level_num}"
+            elif 7 <= level_num <= 10:
+                return f"Advanced Level {level_num}"
+        except (ValueError, IndexError):
+            pass
+    # Fallback: return level as-is if format is unexpected
+    return level
+
+
 @app.post("/api/papers/preview", response_model=PreviewResponse)
 async def preview_paper(config: PaperConfig):
     """Generate preview of questions."""
@@ -160,6 +214,12 @@ async def preview_paper(config: PaperConfig):
         blocks = config.blocks
         if config.level != "Custom" and (not blocks or len(blocks) == 0):
             blocks = get_preset_blocks(config.level)
+        
+        # Update title to include level name if using presets (for preview display)
+        if config.level != "Custom":
+            level_display_name = get_level_display_name(config.level)
+            if level_display_name and level_display_name not in config.title:
+                config.title = f"{config.title} - {level_display_name}"
 
         if not blocks or len(blocks) == 0:
             raise HTTPException(status_code=400, detail="At least one question block is required")
@@ -238,6 +298,12 @@ async def generate_pdf_endpoint(
     blocks = config.blocks
     if config.level != "Custom" and (not blocks or len(blocks) == 0):
         blocks = get_preset_blocks(config.level)
+    
+    # Update title to include level name if using presets
+    if config.level != "Custom":
+        level_display_name = get_level_display_name(config.level)
+        if level_display_name and level_display_name not in config.title:
+            config.title = f"{config.title} - {level_display_name}"
     
     # Use provided blocks or generate new ones
     if generated_blocks_data:
@@ -475,18 +541,4 @@ async def get_paper_attempt(
         raise HTTPException(status_code=404, detail="Paper attempt not found")
     
     return PaperAttemptDetailResponse.model_validate(paper_attempt)
-
-
-@app.get("/api/papers/attempts", response_model=List[PaperAttemptResponse])
-async def get_paper_attempts(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-    limit: int = 20
-):
-    """Get user's paper attempt history."""
-    attempts = db.query(PaperAttempt).filter(
-        PaperAttempt.user_id == current_user.id
-    ).order_by(PaperAttempt.started_at.desc()).limit(limit).all()
-    
-    return [PaperAttemptResponse.model_validate(attempt) for attempt in attempts]
 

@@ -2,6 +2,7 @@
 HTML Template Generator for PDF Export
 Matches the frontend preview structure exactly
 """
+import re
 from typing import List
 from schemas import PaperConfig, GeneratedBlock
 
@@ -77,7 +78,10 @@ def render_vertical_question(question, show_answer: bool = False) -> str:
 
 def render_horizontal_question(question, show_answer: bool = False) -> str:
     """Render a horizontal question (multiplication, division, etc.)."""
-    html = '<table class="question-horizontal">'
+    # Add class to indicate if answer column exists
+    has_answer = show_answer and hasattr(question, 'answer') and question.answer is not None
+    table_class = "question-horizontal" + (" with-answer" if has_answer else " no-answer")
+    html = f'<table class="{table_class}">'
     html += '<tbody><tr>'
     
     # Serial number column
@@ -86,8 +90,22 @@ def render_horizontal_question(question, show_answer: bool = False) -> str:
     # Question text column
     html += '<td class="question-col">'
     
-    # Build question text
-    if hasattr(question, 'operands') and question.operands:
+    # Get operator to determine special formatting
+    operator = getattr(question, 'operator', '')
+    question_text = getattr(question, 'text', '')
+    
+    # Handle special operations that need custom formatting
+    if operator == "√" or operator == "∛":
+        # Square root or cube root - use text field directly (contains symbols)
+        html += f'<div class="question-text">{question_text}</div>'
+    elif operator == "×" and question_text and "." in question_text:
+        # Decimal multiplication - use text field directly (contains decimals)
+        html += f'<div class="question-text">{question_text}</div>'
+    elif question_text and (question_text.startswith("√") or question_text.startswith("∛") or "LCM" in question_text or "GCD" in question_text or "%" in question_text or "." in question_text):
+        # Use text field directly for operations that have special formatting (LCM, GCD, percentage, etc.)
+        html += f'<div class="question-text">{question_text}</div>'
+    elif hasattr(question, 'operands') and question.operands:
+        # Standard format from operands
         if len(question.operands) == 2:
             op1 = format_number(question.operands[0])
             op2 = format_number(question.operands[1])
@@ -102,7 +120,7 @@ def render_horizontal_question(question, show_answer: bool = False) -> str:
                 parts.append(f"{operator} {format_number(op)}")
             html += f'<div class="question-text">{" ".join(parts)} =</div>'
     else:
-        html += f'<div class="question-text">{question.text or ""}</div>'
+        html += f'<div class="question-text">{question_text or ""}</div>'
     
     html += '</td>'
     
@@ -260,6 +278,7 @@ def generate_html(config: PaperConfig, generated_blocks: List[GeneratedBlock],
             align-items: center;
             justify-content: center;
             width: 100%;
+            position: relative;
         }
         
         .operand-wrapper {
@@ -267,22 +286,21 @@ def generate_html(config: PaperConfig, generated_blocks: List[GeneratedBlock],
             align-items: center;
             width: 100%;
             max-width: 100%;
-            justify-content: flex-end;
+            justify-content: center;  /* Center the entire wrapper */
+            position: relative;
         }
         
         .operator-wrapper {
-            flex-shrink: 0;
-            margin-right: 2mm;
-            width: 6mm;
+            position: absolute;
+            left: 2mm;
             text-align: left;
             display: block;
+            z-index: 1;
         }
         
         .number-wrapper {
-            flex-shrink: 0;
-            text-align: right;
-            min-width: 18mm;
-            max-width: 30mm;
+            text-align: center;  /* Center-align numbers */
+            width: 100%;
             overflow: visible;
         }
         
@@ -342,7 +360,7 @@ def generate_html(config: PaperConfig, generated_blocks: List[GeneratedBlock],
             border-collapse: collapse;
             border: 1pt solid #000000;
             background: transparent;  /* Transparent so watermark shows through */
-            table-layout: auto;
+            table-layout: fixed;  /* Fixed layout for consistent column widths */
         }
         
         .question-horizontal td {
@@ -352,21 +370,32 @@ def generate_html(config: PaperConfig, generated_blocks: List[GeneratedBlock],
         }
         
         .serial-col {
-            width: 12mm;
+            width: 9mm;  /* Increased by 50% from 6mm for better readability */
             border-right: 1pt solid #000000;
             text-align: center;
             vertical-align: middle;
             white-space: nowrap;
         }
         
+        /* Wider serial column when answer column exists */
+        .question-horizontal.with-answer .serial-col {
+            width: 8mm;
+        }
+        
         .question-col {
             border-right: 1pt solid #000000;
             white-space: nowrap;
+            width: 70%;  /* Fixed at 70% of table width - separator at 70% when answer column exists */
+        }
+        
+        /* When no answer column, question takes remaining space */
+        .question-horizontal.no-answer .question-col {
             width: auto;
+            border-right: none;  /* No border when it's the last column */
         }
         
         .answer-col {
-            width: auto;
+            width: 30%;  /* Fixed at 30% of table width */
             text-align: right;
             white-space: nowrap;
         }
@@ -504,10 +533,16 @@ def generate_html(config: PaperConfig, generated_blocks: List[GeneratedBlock],
                                     # Determine operator
                                     operator = ""
                                     if row_idx > 0:
+                                        # For add_sub questions, operators are in the operators list
                                         if hasattr(q, 'operators') and q.operators and len(q.operators) > row_idx - 1:
                                             operator = q.operators[row_idx - 1]
-                                        elif hasattr(q, 'operator') and q.operator:
-                                            operator = q.operator
+                                        # For single operator questions (subtraction, etc.)
+                                        elif hasattr(q, 'operator') and q.operator and q.operator != "±":
+                                            if q.operator == "-":
+                                                operator = q.operator  # Show minus for subtraction
+                                            # For addition, operator is typically shown only on last line
+                                            elif q.operator == "+" and row_idx == len(q.operands) - 1:
+                                                operator = q.operator
                                     
                                     display_value = f"{(op / 10):.1f}" if is_decimal else format_number(op)
                                     html += f'<td class="operand-cell"><div class="operand-content">'
@@ -632,10 +667,20 @@ def generate_html(config: PaperConfig, generated_blocks: List[GeneratedBlock],
         for block in generated_blocks:
             for q in block.questions:
                 if hasattr(q, 'answer') and q.answer is not None:
-                    # Build question text
+                    # Build question text with proper formatting (same logic as render_horizontal_question)
                     question_text = ""
-                    if hasattr(q, 'text') and q.text:
-                        question_text = q.text.replace('\n', ' ')  # Replace newlines with spaces
+                    operator = getattr(q, 'operator', '')
+                    text_field = getattr(q, 'text', '')
+                    
+                    # Handle special operations
+                    if operator == "√" or operator == "∛":
+                        # Use text field directly for root symbols
+                        question_text = text_field.replace('\n', ' ') if text_field else ""
+                    elif text_field and ("." in text_field or "LCM" in text_field or "GCD" in text_field or "%" in text_field or text_field.startswith("√") or text_field.startswith("∛")):
+                        # Use text field directly for special operations (LCM, GCD, percentage, decimals, roots)
+                        question_text = text_field.replace('\n', ' ')
+                    elif text_field:
+                        question_text = text_field.replace('\n', ' ')
                     elif hasattr(q, 'operands') and q.operands:
                         if len(q.operands) == 2:
                             op1 = format_number(q.operands[0])

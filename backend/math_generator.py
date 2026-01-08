@@ -59,14 +59,21 @@ def generate_question(
     """
     # Prevent infinite recursion - fall back to simple question of the same type
     if retry_count > 20:
-        digits = constraints.digits or 1
-        a = generate_number(digits)
-        b = generate_number(digits)
-
+        # Use the same RNG setup as main logic
+        if seed is not None:
+            rng = generate_seeded_rng(seed, question_id)
+            generate_num_fallback = lambda d: generate_number(d, rng)
+        else:
+            generate_num_fallback = lambda d: generate_number(d)
+        
         if question_type == "multiplication":
-            # Simple multiplication fallback - generate with default digits
-            a = generate_number(2)  # 2-digit multiplicand
-            b = generate_number(1)  # 1-digit multiplier
+            # Simple multiplication fallback - respect digit constraints
+            multiplicand_digits = constraints.multiplicandDigits if constraints.multiplicandDigits is not None else 2
+            multiplier_digits = constraints.multiplierDigits if constraints.multiplierDigits is not None else 1
+            multiplicand_digits = max(1, min(20, multiplicand_digits))
+            multiplier_digits = max(1, min(20, multiplier_digits))
+            a = generate_num_fallback(multiplicand_digits)
+            b = generate_num_fallback(multiplier_digits)
             return Question(
                 id=question_id,
                 text=f"{a} × {b} =",
@@ -77,21 +84,36 @@ def generate_question(
                 isVertical=False
             )
         elif question_type == "division":
-            # Simple division fallback - generate with default digits
-            a = generate_number(2)  # 2-digit dividend
-            b = generate_number(1)  # 1-digit divisor
+            # Simple division fallback - respect digit constraints
+            dividend_digits = constraints.dividendDigits if constraints.dividendDigits is not None else 2
+            divisor_digits = constraints.divisorDigits if constraints.divisorDigits is not None else 1
+            dividend_digits = max(1, min(20, dividend_digits))
+            divisor_digits = max(1, min(20, divisor_digits))
+            b = generate_num_fallback(divisor_digits)
             if b == 0:
                 b = 1
+            # Generate dividend that's divisible by divisor
+            quotient = generate_num_fallback(max(1, dividend_digits - divisor_digits + 1))
+            a = quotient * b
+            # Ensure dividend has correct digits
+            while len(str(a)) != dividend_digits and len(str(a)) < dividend_digits:
+                quotient = generate_num_fallback(max(1, dividend_digits - divisor_digits + 1))
+                a = quotient * b
             return Question(
                 id=question_id,
                 text=f"{a} ÷ {b} =",
                 operands=[a, b],
                 operator="÷",
                 operators=None,
-                answer=float(a // b),  # Integer division for simplicity
+                answer=float(quotient),
                 isVertical=False
             )
         elif question_type in ("subtraction", "add_sub"):
+            digits = constraints.digits or 2
+            rows = constraints.rows or 2
+            rows = max(2, min(30, rows))
+            a = generate_num_fallback(digits)
+            b = generate_num_fallback(digits)
             return Question(
                 id=question_id,
                 text=f"{max(a, b)}\n- {min(a, b)}",
@@ -101,7 +123,198 @@ def generate_question(
                 answer=float(max(a, b) - min(a, b)),
                 isVertical=True
             )
-        # Default fallback for addition and other types
+        # Vedic Maths Level 1 fallbacks
+        elif question_type == "vedic_multiply_by_11":
+            digits = constraints.digits if constraints.digits is not None else 2
+            digits = max(2, min(30, digits))
+            num = generate_num_fallback(digits)
+            return Question(
+                id=question_id,
+                text=f"{num} × 11 =",
+                operands=[num, 11],
+                operator="×",
+                operators=None,
+                answer=float(num * 11),
+                isVertical=False
+            )
+        elif question_type == "vedic_multiply_by_101":
+            digits = constraints.digits if constraints.digits is not None else 2
+            digits = max(2, min(30, digits))
+            num = generate_num_fallback(digits)
+            return Question(
+                id=question_id,
+                text=f"{num} × 101 =",
+                operands=[num, 101],
+                operator="×",
+                operators=None,
+                answer=float(num * 101),
+                isVertical=False
+            )
+        elif question_type == "vedic_multiply_by_2":
+            digits = constraints.digits if constraints.digits is not None else 2
+            digits = max(2, min(30, digits))
+            num = generate_num_fallback(digits)
+            return Question(
+                id=question_id,
+                text=f"{num} × 2 =",
+                operands=[num, 2],
+                operator="×",
+                operators=None,
+                answer=float(num * 2),
+                isVertical=False
+            )
+        elif question_type == "vedic_multiply_by_4":
+            digits = constraints.digits if constraints.digits is not None else 2
+            digits = max(2, min(30, digits))
+            num = generate_num_fallback(digits)
+            return Question(
+                id=question_id,
+                text=f"{num} × 4 =",
+                operands=[num, 4],
+                operator="×",
+                operators=None,
+                answer=float(num * 4),
+                isVertical=False
+            )
+        elif question_type == "vedic_multiply_by_6":
+            digits = constraints.digits if constraints.digits is not None else 2
+            digits = max(2, min(30, digits))
+            num = generate_num_fallback(digits)
+            # Ensure even number
+            num = num if num % 2 == 0 else num + 1
+            return Question(
+                id=question_id,
+                text=f"{num} × 6 =",
+                operands=[num, 6],
+                operator="×",
+                operators=None,
+                answer=float(num * 6),
+                isVertical=False
+            )
+        elif question_type == "vedic_divide_by_2":
+            digits = constraints.digits if constraints.digits is not None else 2
+            digits = max(2, min(30, digits))
+            num = generate_num_fallback(digits)
+            return Question(
+                id=question_id,
+                text=f"{num} ÷ 2 =",
+                operands=[num, 2],
+                operator="÷",
+                operators=None,
+                answer=float(num / 2.0),
+                isVertical=False
+            )
+        elif question_type == "vedic_divide_by_4":
+            digits = constraints.digits if constraints.digits is not None else 2
+            digits = max(2, min(30, digits))
+            num = generate_num_fallback(digits)
+            return Question(
+                id=question_id,
+                text=f"{num} ÷ 4 =",
+                operands=[num, 4],
+                operator="÷",
+                operators=None,
+                answer=float(num / 4.0),
+                isVertical=False
+            )
+        elif question_type == "vedic_divide_by_11":
+            digits = constraints.digits if constraints.digits is not None else 3
+            digits = max(2, min(30, digits))
+            num = generate_num_fallback(digits)
+            return Question(
+                id=question_id,
+                text=f"{num} ÷ 11 =",
+                operands=[num, 11],
+                operator="÷",
+                operators=None,
+                answer=float(num / 11.0),
+                isVertical=False
+            )
+        elif question_type == "vedic_special_products_base_100":
+            num1 = int(generate_num_fallback(2))
+            num2 = int(generate_num_fallback(2))
+            # Ensure both are near 100 (90-109)
+            if num1 < 90:
+                num1 = 90 + (num1 % 10)
+            if num1 > 109:
+                num1 = 100 + (num1 % 10)
+            if num2 < 90:
+                num2 = 90 + (num2 % 10)
+            if num2 > 109:
+                num2 = 100 + (num2 % 10)
+            return Question(
+                id=question_id,
+                text=f"{num1} × {num2} =",
+                operands=[num1, num2],
+                operator="×",
+                operators=None,
+                answer=float(num1 * num2),
+                isVertical=False
+            )
+        elif question_type == "vedic_special_products_base_50":
+            num1 = int(generate_num_fallback(2))
+            num2 = int(generate_num_fallback(2))
+            # Ensure both are near 50 (40-59)
+            if num1 < 40:
+                num1 = 40 + (num1 % 10)
+            if num1 > 59:
+                num1 = 50 + (num1 % 10)
+            if num2 < 40:
+                num2 = 40 + (num2 % 10)
+            if num2 > 59:
+                num2 = 50 + (num2 % 10)
+            return Question(
+                id=question_id,
+                text=f"{num1} × {num2} =",
+                operands=[num1, num2],
+                operator="×",
+                operators=None,
+                answer=float(num1 * num2),
+                isVertical=False
+            )
+        elif question_type == "vedic_squares_base_10":
+            tens = (question_id % 9) + 1
+            ones = ((question_id * 3) % 9) + 1
+            num = tens * 10 + ones
+            return Question(
+                id=question_id,
+                text=f"{num}² =",
+                operands=[num],
+                operator="²",
+                operators=None,
+                answer=float(num * num),
+                isVertical=False
+            )
+        elif question_type == "vedic_squares_base_100":
+            hundreds = (question_id % 9) + 1
+            ones = (question_id * 3) % 10
+            num = hundreds * 100 + ones
+            return Question(
+                id=question_id,
+                text=f"{num}² =",
+                operands=[num],
+                operator="²",
+                operators=None,
+                answer=float(num * num),
+                isVertical=False
+            )
+        elif question_type == "vedic_squares_base_1000":
+            thousands = (question_id % 9) + 1
+            ones = (question_id * 3) % 10
+            num = thousands * 1000 + ones
+            return Question(
+                id=question_id,
+                text=f"{num}² =",
+                operands=[num],
+                operator="²",
+                operators=None,
+                answer=float(num * num),
+                isVertical=False
+            )
+        # Default fallback for addition and other unhandled types
+        digits = constraints.digits or 1
+        a = generate_num_fallback(digits)
+        b = generate_num_fallback(digits)
         return Question(
             id=question_id,
             text=f"{a}\n+ {b}",
@@ -196,25 +409,50 @@ def generate_question(
         min_first = 10 ** (digits - 1)
         
         # Generate numbers to subtract first with better randomization
+        # Use question_id to ensure different patterns for each question
         numbers_to_subtract = []
-        # Use varied distribution to avoid patterns
+        # Use varied distribution to avoid patterns - incorporate question_id for uniqueness
+        pattern_seed = (question_id * 7 + seed if seed else question_id * 7) % 10
+        
         for i in range(rows - 1):
-            # Alternate between different generation strategies
-            if i % 3 == 0:
+            # Use different strategies based on position and question_id to avoid patterns
+            strategy = (pattern_seed + i) % 4
+            
+            if strategy == 0:
                 # Standard random
                 num = generate_num(digits)
-            elif i % 3 == 1:
+            elif strategy == 1:
                 # Weighted toward smaller numbers (more typical subtractions)
-                weighted_max = int((max_first - min_first) * 0.6) + min_first
+                weighted_max = int((max_first - min_first) * 0.5) + min_first
                 num = int(random_func() * (weighted_max - min_first + 1)) + min_first
+            elif strategy == 2:
+                # Weighted toward middle values
+                center = (min_first + max_first) // 2
+                spread = (max_first - min_first) // 4
+                offset = int((random_func() * 2 - 1) * spread)
+                num = max(min_first, min(max_first, center + offset))
             else:
                 # Weighted toward larger numbers (challenging subtractions)
-                weighted_min = int((max_first - min_first) * 0.4) + min_first
+                weighted_min = int((max_first - min_first) * 0.3) + min_first
                 num = int(random_func() * (max_first - weighted_min + 1)) + weighted_min
             
             # Ensure exact digit count
             while len(str(num)) != digits:
-                num = generate_num(digits)
+                if strategy == 0:
+                    num = generate_num(digits)
+                else:
+                    # Regenerate with same strategy
+                    if strategy == 1:
+                        weighted_max = int((max_first - min_first) * 0.5) + min_first
+                        num = int(random_func() * (weighted_max - min_first + 1)) + min_first
+                    elif strategy == 2:
+                        center = (min_first + max_first) // 2
+                        spread = (max_first - min_first) // 4
+                        offset = int((random_func() * 2 - 1) * spread)
+                        num = max(min_first, min(max_first, center + offset))
+                    else:
+                        weighted_min = int((max_first - min_first) * 0.3) + min_first
+                        num = int(random_func() * (max_first - weighted_min + 1)) + weighted_min
             numbers_to_subtract.append(num)
         
         sum_to_subtract = sum(numbers_to_subtract)
@@ -273,139 +511,89 @@ def generate_question(
         operator = "±"  # Indicates mixed operations
         
         # Generate mixed addition/subtraction: e.g., 9 - 2 + 5 + 7 - 3
-        # Strategy: Generate operands and randomly assign operators, ensuring positive result
+        # Strategy: Generate operands and randomly assign operators, ensuring positive result at every step
         
         max_val = (10 ** digits) - 1
         min_val = 10 ** (digits - 1)
         
-        # Generate all operands first with better randomization
+        # Generate operands and operators ensuring no negatives at any step
         operands = []
-        # Use varied distribution strategies
-        distribution_cycle = int(random_func() * 3)
-        
-        for i in range(rows):
-            if distribution_cycle == 0:
-                # Standard uniform distribution
-                num = generate_num(digits)
-            elif distribution_cycle == 1:
-                # Weighted toward middle values
-                center = (min_val + max_val) // 2
-                spread = (max_val - min_val) // 3
-                offset = int((random_func() + random_func() - 1) * spread)
-                num = max(min_val, min(max_val, center + offset))
-            else:
-                # Mix of small and large (avoid middle-heavy patterns)
-                if i % 2 == 0:
-                    # Smaller numbers
-                    num = int(random_func() * ((min_val + max_val) // 2 - min_val + 1)) + min_val
-                else:
-                    # Larger numbers
-                    num = int(random_func() * (max_val - (min_val + max_val) // 2 + 1)) + (min_val + max_val) // 2
-            
-            # Ensure exact digit count
-            while len(str(num)) != digits:
-                num = generate_num(digits)
-            operands.append(num)
-        
-        # Better operator assignment: avoid patterns, ensure variety
         operators_list = []
-        # Track operator balance to avoid all + or all -
-        add_count = 0
-        sub_count = 0
-        target_balance = (rows - 1) / 2  # Aim for roughly balanced
+        running_total = 0
         
+        # Start with first operand (always positive)
+        first_num = generate_num(digits)
+        operands.append(first_num)
+        running_total = float(first_num)
+        
+        # Generate remaining operands and operators, ensuring running total never goes negative
         for i in range(rows - 1):
-            # Use adaptive probability based on current balance
-            if add_count > target_balance + 1:
-                # Too many additions, favor subtraction
-                prob_add = 0.3
-            elif sub_count > target_balance + 1:
-                # Too many subtractions, favor addition
-                prob_add = 0.7
+            # Decide operator first (random, but ensure we can maintain positive total)
+            # If running total is low, favor addition
+            if running_total < min_val * 2:
+                prob_add = 0.7  # Favor addition when total is low
+            elif running_total > max_val * 0.8:
+                prob_add = 0.4  # Favor subtraction when total is high
             else:
-                # Balanced, use varied probability (not exactly 50/50 to avoid patterns)
-                # Use question_id to create variation
+                # Balanced probability with variation
                 base_prob = 0.5
-                variation = (question_id % 5) / 20.0  # Vary between 0.45 and 0.55
+                variation = (question_id % 5) / 20.0
                 prob_add = base_prob + variation - 0.1
             
             op = "+" if random_func() < prob_add else "-"
-            operators_list.append(op)
             
             if op == "+":
-                add_count += 1
+                # Addition: can use any valid number
+                num = generate_num(digits)
+                operands.append(num)
+                running_total += num
+                operators_list.append("+")
             else:
-                sub_count += 1
+                # Subtraction: must ensure running_total - num >= 0
+                # Maximum we can subtract is running_total (to get 0)
+                max_subtract = int(running_total)
+                if max_subtract < min_val:
+                    # Can't subtract without going negative, use addition instead
+                    num = generate_num(digits)
+                    operands.append(num)
+                    running_total += num
+                    operators_list.append("+")
+                else:
+                    # Generate number to subtract (between min_val and max_subtract)
+                    subtract_max = min(max_val, max_subtract)
+                    if subtract_max < min_val:
+                        # Can't subtract, use addition
+                        num = generate_num(digits)
+                        operands.append(num)
+                        running_total += num
+                        operators_list.append("+")
+                    else:
+                        # Generate random number in valid range
+                        num = int(random_func() * (subtract_max - min_val + 1)) + min_val
+                        # Ensure exact digit count
+                        while len(str(num)) != digits:
+                            num = int(random_func() * (subtract_max - min_val + 1)) + min_val
+                        operands.append(num)
+                        running_total -= num
+                        operators_list.append("-")
         
-        # Calculate answer by applying operations left to right
-        answer = float(operands[0])
-        for i, op in enumerate(operators_list):
-            if op == "+":
-                answer += operands[i + 1]
-            else:
-                answer -= operands[i + 1]
+        # Final answer
+        answer = running_total
         
-        # If answer is negative, we need to adjust
-        # Strategy: If answer < 0, try to balance by changing some operators or adjusting numbers
+        # Verify answer is non-negative (should always be true now)
         if answer < 0:
             if retry_count < 20:
-                # Retry with different operator distribution
                 return generate_question(question_id, question_type, constraints, seed, retry_count + 1)
-            
-            # Last resort: ensure positive answer by adjusting
-            # Calculate how much we need to add to make it positive
-            needed = abs(answer) + 1
-            
-            # Try to convert some subtractions to additions or increase some numbers
-            # First, try changing operators
-            for i in range(len(operators_list)):
-                if operators_list[i] == "-" and needed > 0:
-                    # Changing this to + will add 2 * operands[i+1] to the answer
-                    change = 2 * operands[i + 1]
-                    if change >= needed:
-                        operators_list[i] = "+"
-                        answer += change
-                        needed -= change
-                        if answer >= 0:
-                            break
-            
-            # If still negative, try increasing the first number
-            if answer < 0:
-                needed = abs(answer) + 1
-                if operands[0] + needed <= max_val:
-                    operands[0] += needed
-                    answer += needed
-                else:
-                    # Can't increase first, try decreasing subtractors
-                    for i in range(len(operators_list)):
-                        if operators_list[i] == "-" and needed > 0:
-                            decrease = min(needed, operands[i + 1] - min_val)
-                            operands[i + 1] -= decrease
-                            answer += decrease
-                            needed -= decrease
-                            if answer >= 0:
-                                break
-                    
-                    # If still negative, set answer to 0 by adjusting first number
-                    if answer < 0:
-                        operands[0] = max(min_val, operands[0] - abs(answer))
-                        answer = 0.0
+            # Last resort: set to 0
+            answer = 0.0
         
-        # Verify all operands still have correct digits after adjustments
+        # Verify all operands have correct digits
         for i, op in enumerate(operands):
             if len(str(op)) != digits:
                 if retry_count < 20:
                     return generate_question(question_id, question_type, constraints, seed, retry_count + 1)
                 # Clamp to valid range
                 operands[i] = max(min_val, min(max_val, op))
-        
-        # Recalculate answer to ensure it's correct after any adjustments
-        answer = float(operands[0])
-        for i, op in enumerate(operators_list):
-            if op == "+":
-                answer += operands[i + 1]
-            else:
-                answer -= operands[i + 1]
         
         # Store operators list for use in text generation
         operators = operators_list
@@ -433,8 +621,86 @@ def generate_question(
         multiplier_digits = max(1, min(20, multiplier_digits))  # Allow up to 20 digits as per schema
 
         # Generate numbers with exact digit constraints
+        # Use question_id to ensure uniqueness and avoid patterns
         a = generate_num(multiplicand_digits)
         b = generate_num(multiplier_digits)
+        
+        # For large digits (10+), ensure numbers don't end with multiple zeros
+        # Directly fix trailing zeros by replacing them with random non-zero digits
+        if multiplicand_digits >= 10 or multiplier_digits >= 10:
+            # For large numbers, allow max 1 trailing zero (to keep randomness)
+            max_allowed_zeros = 1
+            
+            # Fix multiplicand: ensure it doesn't end with multiple zeros
+            a_str = str(a)
+            a_trailing_zeros = len(a_str) - len(a_str.rstrip('0'))
+            if a_trailing_zeros > max_allowed_zeros:
+                # Convert to list for easier manipulation
+                a_digits_list = list(a_str)
+                # Replace trailing zeros (beyond max_allowed_zeros) with random non-zero digits
+                zeros_to_fix = a_trailing_zeros - max_allowed_zeros
+                for i in range(len(a_digits_list) - a_trailing_zeros, len(a_digits_list) - max_allowed_zeros):
+                    a_digits_list[i] = str(int(random_func() * 9) + 1)  # 1-9 (non-zero)
+                a = int(''.join(a_digits_list))
+                # Ensure correct digit count
+                a_str_new = str(a)
+                if len(a_str_new) != multiplicand_digits:
+                    # Regenerate if digit count is wrong
+                    a = generate_num(multiplicand_digits)
+                    # Fix trailing zeros again
+                    a_str = str(a)
+                    a_trailing_zeros = len(a_str) - len(a_str.rstrip('0'))
+                    if a_trailing_zeros > max_allowed_zeros:
+                        a_digits_list = list(a_str)
+                        zeros_to_fix = a_trailing_zeros - max_allowed_zeros
+                        for i in range(len(a_digits_list) - a_trailing_zeros, len(a_digits_list) - max_allowed_zeros):
+                            a_digits_list[i] = str(int(random_func() * 9) + 1)
+                        a = int(''.join(a_digits_list))
+            
+            # Fix multiplier: ensure it doesn't end with multiple zeros
+            b_str = str(b)
+            b_trailing_zeros = len(b_str) - len(b_str.rstrip('0'))
+            if b_trailing_zeros > max_allowed_zeros:
+                # Convert to list for easier manipulation
+                b_digits_list = list(b_str)
+                # Replace trailing zeros (beyond max_allowed_zeros) with random non-zero digits
+                zeros_to_fix = b_trailing_zeros - max_allowed_zeros
+                for i in range(len(b_digits_list) - b_trailing_zeros, len(b_digits_list) - max_allowed_zeros):
+                    b_digits_list[i] = str(int(random_func() * 9) + 1)  # 1-9 (non-zero)
+                b = int(''.join(b_digits_list))
+                # Ensure correct digit count
+                b_str_new = str(b)
+                if len(b_str_new) != multiplier_digits:
+                    # Regenerate if digit count is wrong
+                    b = generate_num(multiplier_digits)
+                    # Fix trailing zeros again
+                    b_str = str(b)
+                    b_trailing_zeros = len(b_str) - len(b_str.rstrip('0'))
+                    if b_trailing_zeros > max_allowed_zeros:
+                        b_digits_list = list(b_str)
+                        zeros_to_fix = b_trailing_zeros - max_allowed_zeros
+                        for i in range(len(b_digits_list) - b_trailing_zeros, len(b_digits_list) - max_allowed_zeros):
+                            b_digits_list[i] = str(int(random_func() * 9) + 1)
+                        b = int(''.join(b_digits_list))
+            
+            # Final verification: double-check both numbers
+            a_str = str(a)
+            b_str = str(b)
+            a_trailing_zeros = len(a_str) - len(a_str.rstrip('0'))
+            b_trailing_zeros = len(b_str) - len(b_str.rstrip('0'))
+            
+            # Force fix if still too many zeros
+            if a_trailing_zeros > max_allowed_zeros:
+                a_digits_list = list(a_str)
+                for i in range(len(a_digits_list) - a_trailing_zeros, len(a_digits_list) - max_allowed_zeros):
+                    a_digits_list[i] = str(int(random_func() * 9) + 1)
+                a = int(''.join(a_digits_list))
+            
+            if b_trailing_zeros > max_allowed_zeros:
+                b_digits_list = list(b_str)
+                for i in range(len(b_digits_list) - b_trailing_zeros, len(b_digits_list) - max_allowed_zeros):
+                    b_digits_list[i] = str(int(random_func() * 9) + 1)
+                b = int(''.join(b_digits_list))
         
         # Validate that generated numbers match the digit constraints
         a_digits = len(str(a))
@@ -465,14 +731,15 @@ def generate_question(
         dividend_digits = max(1, min(20, dividend_digits))  # Allow up to 20 digits as per schema
         divisor_digits = max(1, min(20, divisor_digits))  # Allow up to 20 digits as per schema
         
-        # Generate divisor (must be non-zero and not 1 to avoid obvious questions)
+        # Generate divisor (must be non-zero)
+        # For 1-digit divisor, allow 1 if user specifically wants 1/1 division
         divisor = generate_num(divisor_digits)
         attempts = 0
-        while (divisor == 0 or divisor == 1) and attempts < 10:
+        while divisor == 0 and attempts < 10:
             divisor = generate_num(divisor_digits)
             attempts += 1
-        if divisor == 0 or divisor == 1:
-            divisor = 2  # Use 2 as fallback instead of 1
+        if divisor == 0:
+            divisor = 1  # Use 1 as fallback (minimum valid divisor)
         
         # Calculate valid quotient range
         dividend_min = 10 ** (dividend_digits - 1)
@@ -483,16 +750,79 @@ def generate_question(
             dividend_max // divisor
         )
         
+        # Ensure we have a valid range
         if quotient_min > quotient_max or quotient_max < 1:
-            return generate_question(question_id, question_type, constraints, seed, retry_count + 1)
+            if retry_count < 20:
+                return generate_question(question_id, question_type, constraints, seed, retry_count + 1)
+            # Last resort: use minimum valid values
+            quotient_min = 1
+            quotient_max = max(1, dividend_max // divisor)
+            if quotient_max < 1:
+                # Can't generate valid division, use simple case
+                quotient = 1
+                dividend = divisor
+                if len(str(dividend)) != dividend_digits:
+                    # Adjust to meet digit requirement
+                    dividend = max(dividend_min, min(dividend_max, dividend))
+                operands = [dividend, divisor]
+                answer = float(quotient)
+                return Question(
+                    id=question_id,
+                    text=f"{dividend} ÷ {divisor} =",
+                    operands=operands,
+                    operator="÷",
+                    operators=None,
+                    answer=answer,
+                    isVertical=False
+                )
         
-        # Generate quotient
-        quotient = int(random_func() * (quotient_max - quotient_min + 1)) + quotient_min
-        dividend = quotient * divisor
+        # Generate quotient, ensuring dividend will have correct digits
+        # First, generate all valid quotient-dividend pairs that satisfy digit constraints
+        valid_quotients = []
+        for q in range(quotient_min, quotient_max + 1):
+            d = q * divisor
+            # Strictly check: dividend must have exactly the correct number of digits
+            if len(str(d)) == dividend_digits and dividend_min <= d <= dividend_max:
+                valid_quotients.append(q)
         
-        # Verify
-        if dividend < dividend_min or dividend > dividend_max or dividend % divisor != 0:
-            return generate_question(question_id, question_type, constraints, seed, retry_count + 1)
+        # If no valid quotients found, retry with a new divisor
+        if not valid_quotients:
+            if retry_count < 20:
+                return generate_question(question_id, question_type, constraints, seed, retry_count + 1)
+            # Last resort: use minimum valid values
+            quotient = 1
+            dividend = divisor
+            # Ensure dividend has correct digits
+            if len(str(dividend)) != dividend_digits:
+                # Try to find a quotient that gives correct digits
+                for q in range(1, 10):
+                    d = q * divisor
+                    if len(str(d)) == dividend_digits and dividend_min <= d <= dividend_max:
+                        quotient = q
+                        dividend = d
+                        break
+                # If still not found, clamp to valid range
+                if len(str(dividend)) != dividend_digits:
+                    dividend = max(dividend_min, min(dividend_max, dividend))
+                    quotient = dividend // divisor
+                    if quotient < 1:
+                        quotient = 1
+                        dividend = divisor
+        else:
+            # Pick a random valid quotient from the valid list
+            quotient = valid_quotients[int(random_func() * len(valid_quotients))]
+            dividend = quotient * divisor
+        
+        # Final strict verification: dividend must have exactly the correct number of digits
+        if len(str(dividend)) != dividend_digits:
+            if retry_count < 20:
+                return generate_question(question_id, question_type, constraints, seed, retry_count + 1)
+            # Last resort: ensure dividend is in valid range
+            dividend = max(dividend_min, min(dividend_max, dividend))
+            quotient = dividend // divisor
+            if quotient < 1:
+                quotient = 1
+                dividend = divisor
         
         operands = [dividend, divisor]
         answer = float(quotient)
@@ -583,8 +913,8 @@ def generate_question(
         
         # Generate multiplier based on multiplier_digits
         if multiplier_digits == 0:
-            # Whole number: generate 1-99 (reasonable range)
-            b = int(random_func() * 99) + 1
+            # Whole number: generate single digit only (1-9)
+            b = int(random_func() * 9) + 1
             b_int = b
         else:
             # Decimal: digits_before_decimal + 1 decimal place
@@ -766,47 +1096,56 @@ def generate_question(
         # Store operators list for use in text generation
         operators = operators_list
         
-        # Build text representation for decimal add/sub
+        # Build text representation for decimal add/sub with decimal points
         text_parts = []
-        # First operand
+        # First operand (no operator)
         first_val = float(operands[0]) / 10.0
         text_parts.append(f"{first_val:.1f}")
         # Subsequent operands with their operators
-        for i, op in enumerate(operands[1:], 1):
-            val = float(op) / 10.0
-            text_parts.append(f"{operators_list[i-1]} {val:.1f}")
+        for i, op in enumerate(operators_list):
+            operand_val = float(operands[i + 1]) / 10.0
+            text_parts.append(f"{op} {operand_val:.1f}")
         text = "\n".join(text_parts)
+        
+        # Debug: Print text to verify it's being set correctly
+        # print(f"DEBUG decimal_add_sub text: {repr(text)}")
     
     elif question_type == "decimal_division":
         operator = "÷"
         is_vertical = False
         
-        # Get digit constraints - same as decimal multiplication
-        # multiplicandDigits = digits before decimal point for dividend (but dividend will be whole)
-        # multiplierDigits = digits for divisor (divisor will be whole)
-        multiplicand_digits = constraints.multiplicandDigits or int(random_func() * 3) + 1  # 1-3 digits default
-        multiplier_digits = constraints.multiplierDigits or int(random_func() * 2) + 1  # 1-2 digits default
+        # Get digit constraints - use dividendDigits and divisorDigits
+        # dividendDigits = number of digits for dividend (dividend will be whole number)
+        # divisorDigits = number of digits for divisor (divisor will be whole number)
+        dividend_digits = constraints.dividendDigits if constraints.dividendDigits is not None else int(random_func() * 3) + 1  # 1-3 digits default
+        divisor_digits = constraints.divisorDigits if constraints.divisorDigits is not None else int(random_func() * 2) + 1  # 1-2 digits default
         
-        multiplicand_digits = max(1, min(20, multiplicand_digits))  # Allow up to 20 digits as per schema
-        multiplier_digits = max(1, min(20, multiplier_digits))  # Allow up to 20 digits as per schema
+        dividend_digits = max(1, min(20, dividend_digits))  # Allow up to 20 digits as per schema
+        divisor_digits = max(1, min(20, divisor_digits))  # Allow up to 20 digits as per schema
         
         # Generate whole number dividend with specified digits
-        dividend_min = 10 ** (multiplicand_digits - 1)
-        dividend_max = (10 ** multiplicand_digits) - 1
-        dividend = generate_num(multiplicand_digits)
+        dividend_min = 10 ** (dividend_digits - 1)
+        dividend_max = (10 ** dividend_digits) - 1
+        dividend = generate_num(dividend_digits)
+        
+        # Ensure dividend has exactly the right number of digits (safety check)
+        attempts_dividend = 0
+        while (dividend < dividend_min or dividend > dividend_max) and attempts_dividend < 20:
+            dividend = generate_num(dividend_digits)
+            attempts_dividend += 1
         
         # Generate whole number divisor with specified digits
-        divisor_min = 10 ** (multiplier_digits - 1)
-        divisor_max = (10 ** multiplier_digits) - 1
-        divisor = generate_num(multiplier_digits)
+        divisor_min = 10 ** (divisor_digits - 1)
+        divisor_max = (10 ** divisor_digits) - 1
+        divisor = generate_num(divisor_digits)
         
-        # Ensure divisor is non-zero
+        # Ensure divisor has exactly the right number of digits and is non-zero
         attempts = 0
-        while divisor == 0 and attempts < 10:
-            divisor = generate_num(multiplier_digits)
+        while (divisor == 0 or divisor < divisor_min or divisor > divisor_max) and attempts < 20:
+            divisor = generate_num(divisor_digits)
             attempts += 1
         if divisor == 0:
-            divisor = 1
+            divisor = max(1, divisor_min)  # Ensure at least 1, or minimum for digit count
         
         # Calculate answer (will be decimal)
         answer = round(dividend / divisor, 2)
@@ -2909,8 +3248,14 @@ def _create_question_signature(question: Question) -> str:
         operands_str = ",".join(map(str, question.operands))
         return f"{question.operator}|{operands_str}|{ops_str}"
     else:
-        # For simple operations
-        operands_str = ",".join(map(str, sorted(question.operands)))
+        # For simple operations - preserve order for operations where order matters
+        # For vedic operations with fixed multipliers (11, 101, 2, 4, 6, etc.), order matters
+        if question.operator in ("×", "÷") and len(question.operands) == 2:
+            # For multiplication/division, preserve order (num × multiplier, not multiplier × num)
+            operands_str = ",".join(map(str, question.operands))
+        else:
+            # For other operations, sort operands for uniqueness
+            operands_str = ",".join(map(str, sorted(question.operands)))
         return f"{question.operator}|{operands_str}"
 
 
@@ -2918,7 +3263,7 @@ def generate_block(block_config: BlockConfig, start_id: int, seed: Optional[int]
     """Generate a block of questions with uniqueness guarantee."""
     questions = []
     seen_signatures = set()  # Track unique question signatures
-    max_retries_per_question = 50  # Maximum retries to find unique question
+    max_retries_per_question = 100  # Increased from 50 to 100 for better uniqueness with large question sets
     
     # For vedic_tables, use rows (or count) to determine how many table rows to generate
     if block_config.type == "vedic_tables":
@@ -2984,7 +3329,8 @@ def generate_block(block_config: BlockConfig, start_id: int, seed: Optional[int]
                     current_seed = question_seed
                     if retry_count > 0:
                         # Vary the seed significantly for retries to ensure different questions
-                        current_seed = (question_seed or 0) + (retry_count * 1000) + (i * 100) if question_seed else None
+                        # Use larger multipliers to ensure more variation, especially for large question sets
+                        current_seed = (question_seed or 0) + (retry_count * 10000) + (i * 1000) + (start_id * 100) if question_seed else None
                     
                     question = generate_question(
                         start_id + i,
@@ -3007,29 +3353,175 @@ def generate_block(block_config: BlockConfig, start_id: int, seed: Optional[int]
                 except Exception as e:
                     retry_count += 1
                     if retry_count >= max_retries_per_question:
-                        # Fallback question after max retries
+                        # Fallback question after max retries - respect original question type
                         try:
-                            digits = block_config.constraints.digits if block_config.constraints.digits is not None else 1
-                            num1 = 10 ** (digits - 1) + (i % 9)  # Vary the number
-                            num2 = 10 ** (digits - 1) + ((i * 3) % 9)  # Different variation
-                            question = Question(
-                                id=start_id + i,
-                                text=f"{num1}\n+ {num2}",
-                                operands=[num1, num2],
-                                operator="+",
-                                operators=None,
-                                answer=float(num1 + num2),
-                                isVertical=True
+                            # Use the fallback logic from generate_question with retry_count > 20
+                            question = generate_question(
+                                start_id + i,
+                                block_config.type,
+                                block_config.constraints,
+                                question_seed,
+                                21  # Set retry_count to 21 to trigger fallback logic
                             )
                             signature = _create_question_signature(question)
                             if signature not in seen_signatures:
                                 seen_signatures.add(signature)
                                 questions.append(question)
                             else:
-                                # Even fallback is duplicate, use minimal variation
-                                num1 = 10 ** (digits - 1) + (i % 8) + 1
-                                num2 = 10 ** (digits - 1) + ((i * 7 + 1) % 8) + 1
-                                question = Question(
+                                # Even fallback is duplicate, try one more time with different seed
+                                question = generate_question(
+                                    start_id + i,
+                                    block_config.type,
+                                    block_config.constraints,
+                                    (question_seed or 0) + i * 10000 if question_seed else None,
+                                    21
+                                )
+                                questions.append(question)
+                        except Exception:
+                            # Ultimate fallback - still respect question type
+                            # Use generate_question with retry_count=21 to trigger fallback logic
+                            try:
+                                question = generate_question(
+                                    start_id + i,
+                                    block_config.type,
+                                    block_config.constraints,
+                                    (seed or 0) + i * 10000 if seed else None,
+                                    21  # Trigger fallback
+                                )
+                                signature = _create_question_signature(question)
+                                if signature not in seen_signatures:
+                                    seen_signatures.add(signature)
+                                    questions.append(question)
+                                else:
+                                    # Even fallback is duplicate, append anyway to avoid infinite loop
+                                    questions.append(question)
+                            except Exception:
+                                # Last resort - generate simple question of correct type
+                                if block_config.type == "multiplication":
+                                    a = 2 + (i % 8)
+                                    b = 1 + (i % 9)
+                                    questions.append(Question(
+                                        id=start_id + i,
+                                        text=f"{a} × {b} =",
+                                        operands=[a, b],
+                                        operator="×",
+                                        operators=None,
+                                        answer=float(a * b),
+                                        isVertical=False
+                                    ))
+                                elif block_config.type == "division":
+                                    b = 2 + (i % 8)
+                                    quotient = 1 + (i % 9)
+                                    a = quotient * b
+                                    questions.append(Question(
+                                        id=start_id + i,
+                                        text=f"{a} ÷ {b} =",
+                                        operands=[a, b],
+                                        operator="÷",
+                                        operators=None,
+                                        answer=float(quotient),
+                                        isVertical=False
+                                    ))
+                                else:
+                                    # For other types, use generate_question fallback
+                                    try:
+                                        question = generate_question(
+                                            start_id + i,
+                                            block_config.type,
+                                            block_config.constraints,
+                                            (seed or 0) + i * 20000 if seed else None,
+                                            21
+                                        )
+                                        questions.append(question)
+                                    except Exception:
+                                        # Truly last resort - use addition only if all else fails
+                                        digits = block_config.constraints.digits if block_config.constraints.digits is not None else 1
+                                        num1 = 10 ** (digits - 1) + (i % 9)
+                                        num2 = 10 ** (digits - 1) + ((i * 3) % 9)
+                                        questions.append(Question(
+                                            id=start_id + i,
+                                            text=f"{num1}\n+ {num2}",
+                                            operands=[num1, num2],
+                                            operator="+",
+                                            operators=None,
+                                            answer=float(num1 + num2),
+                                            isVertical=True
+                                        ))
+            
+            # If we still don't have a question after all retries, use fallback
+            if question is None:
+                try:
+                    # Use the fallback logic from generate_question
+                    question = generate_question(
+                        start_id + i,
+                        block_config.type,
+                        block_config.constraints,
+                        question_seed,
+                        21  # Set retry_count to 21 to trigger fallback logic
+                    )
+                    questions.append(question)
+                except Exception:
+                    # Ultimate fallback - still respect question type
+                    # Use generate_question with retry_count=21 to trigger fallback logic
+                    try:
+                        question = generate_question(
+                            start_id + i,
+                            block_config.type,
+                            block_config.constraints,
+                            (seed or 0) + i * 10000 if seed else None,
+                            21  # Trigger fallback
+                        )
+                        signature = _create_question_signature(question)
+                        if signature not in seen_signatures:
+                            seen_signatures.add(signature)
+                            questions.append(question)
+                        else:
+                            # Even fallback is duplicate, append anyway to avoid infinite loop
+                            questions.append(question)
+                    except Exception:
+                        # Last resort - generate simple question of correct type
+                        if block_config.type == "multiplication":
+                            a = 2 + (i % 8)
+                            b = 1 + (i % 9)
+                            questions.append(Question(
+                                id=start_id + i,
+                                text=f"{a} × {b} =",
+                                operands=[a, b],
+                                operator="×",
+                                operators=None,
+                                answer=float(a * b),
+                                isVertical=False
+                            ))
+                        elif block_config.type == "division":
+                            b = 2 + (i % 8)
+                            quotient = 1 + (i % 9)
+                            a = quotient * b
+                            questions.append(Question(
+                                id=start_id + i,
+                                text=f"{a} ÷ {b} =",
+                                operands=[a, b],
+                                operator="÷",
+                                operators=None,
+                                answer=float(quotient),
+                                isVertical=False
+                            ))
+                        else:
+                            # For other types, use generate_question fallback
+                            try:
+                                question = generate_question(
+                                    start_id + i,
+                                    block_config.type,
+                                    block_config.constraints,
+                                    (seed or 0) + i * 20000 if seed else None,
+                                    21
+                                )
+                                questions.append(question)
+                            except Exception:
+                                # Truly last resort - use addition only if all else fails
+                                digits = block_config.constraints.digits if block_config.constraints.digits is not None else 1
+                                num1 = 10 ** (digits - 1) + (i % 9)
+                                num2 = 10 ** (digits - 1) + ((i * 3) % 9)
+                                questions.append(Question(
                                     id=start_id + i,
                                     text=f"{num1}\n+ {num2}",
                                     operands=[num1, num2],
@@ -3037,46 +3529,7 @@ def generate_block(block_config: BlockConfig, start_id: int, seed: Optional[int]
                                     operators=None,
                                     answer=float(num1 + num2),
                                     isVertical=True
-                                )
-                                questions.append(question)
-                        except Exception:
-                            # Ultimate fallback
-                            questions.append(Question(
-                                id=start_id + i,
-                                text="10\n+ 10",
-                                operands=[10, 10],
-                                operator="+",
-                                operators=None,
-                                answer=20.0,
-                                isVertical=True
-                            ))
-            
-            # If we still don't have a question after all retries, use fallback
-            if question is None:
-                try:
-                    digits = block_config.constraints.digits if block_config.constraints.digits is not None else 1
-                    num1 = 10 ** (digits - 1) + (i % 9)
-                    num2 = 10 ** (digits - 1) + ((i * 3) % 9)
-                    question = Question(
-                        id=start_id + i,
-                        text=f"{num1}\n+ {num2}",
-                        operands=[num1, num2],
-                        operator="+",
-                        operators=None,
-                        answer=float(num1 + num2),
-                        isVertical=True
-                    )
-                    questions.append(question)
-                except Exception:
-                    questions.append(Question(
-                        id=start_id + i,
-                        text="10\n+ 10",
-                        operands=[10, 10],
-                        operator="+",
-                        operators=None,
-                        answer=20.0,
-                        isVertical=True
-                    ))
+                                ))
     
     return GeneratedBlock(config=block_config, questions=questions)
 
